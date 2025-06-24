@@ -1,0 +1,1680 @@
+@prefix : <https://w3id.org/def/nyon#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix nyon: <https://w3id.org/def/nyon#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix swrla: <http://swrl.stanford.edu/ontologies/3.3/swrla.owl#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@base <https://w3id.org/def/nyon#> .
+
+<https://w3id.org/def/nyon#> rdf:type owl:Ontology ;
+                              dc:publisher <https://www.semintelligence.org/projects> ;
+                              dcterms:contributor "Jain, Sarika" ,
+                                                  "Mihindukulasooriya, Nandana" ;
+                              dcterms:created "2020-04-04" ;
+                              dcterms:creator "Harde, Pooja" ;
+                              dcterms:description "An ontology driven knowledge-based model for describing judicial court documents."@en ;
+                              dcterms:license <http://purl.org/NET/rdflicense/cc-by4.0> ;
+                              dcterms:modified "2024-09-03" ;
+                              dcterms:title "NyOn:  A knowledge based intelligent model for Globalised Judiciary"@en ;
+                              vann:preferredNamespacePrefix "nyon" ;
+                              vann:preferredNamespaceUri "https://w3id.org/def/nyon#"@en ;
+                              owl:priorVersion "https://w3id.org/def/NyOnLegalOntology#" ;
+                              owl:versionInfo 2.0 ;
+                              foaf:homepage "https://w3id.org/def/nyon#"@en .
+
+#################################################################
+#    Annotation properties
+#################################################################
+
+###  http://purl.org/dc/elements/1.1/publisher
+dc:publisher rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/contributor
+dcterms:contributor rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/created
+dcterms:created rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/creator
+dcterms:creator rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/description
+dcterms:description rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/license
+dcterms:license rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/modified
+dcterms:modified rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/title
+dcterms:title rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/vocab/vann/preferredNamespacePrefix
+vann:preferredNamespacePrefix rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/vocab/vann/preferredNamespaceUri
+vann:preferredNamespaceUri rdf:type owl:AnnotationProperty .
+
+
+###  http://swrl.stanford.edu/ontologies/3.3/swrla.owl#isRuleEnabled
+swrla:isRuleEnabled rdf:type owl:AnnotationProperty .
+
+
+###  http://www.w3.org/2002/07/owl#sameAs
+owl:sameAs rdf:type owl:AnnotationProperty .
+
+
+###  http://www.w3.org/2004/02/skos/core#atLabel
+skos:atLabel rdf:type owl:AnnotationProperty .
+
+
+###  http://www.w3.org/2004/02/skos/core#definition
+skos:definition rdf:type owl:AnnotationProperty .
+
+
+###  http://www.w3.org/2004/02/skos/core#exactMatch
+skos:exactMatch rdf:type owl:AnnotationProperty .
+
+
+###  http://xmlns.com/foaf/0.1/homepage
+foaf:homepage rdf:type owl:AnnotationProperty .
+
+
+#################################################################
+#    Datatypes
+#################################################################
+
+###  http://www.w3.org/1999/02/22-rdf-syntax-ns#resource
+rdf:resource rdf:type rdfs:Datatype .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  https://w3id.org/def/nyon#appellantArgument
+nyon:appellantArgument rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf nyon:makeArgument ;
+                       rdfs:domain nyon:Argument ;
+                       rdfs:range nyon:Appellant ;
+                       rdfs:comment "specifies the argument made by the appellant (nyon:Appellant) of nyon:CourtCase" ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "appellantArgument" .
+
+
+###  https://w3id.org/def/nyon#cited
+nyon:cited rdf:type owl:ObjectProperty ,
+                    owl:InverseFunctionalProperty ;
+           rdfs:domain nyon:CourtCase ;
+           rdfs:range nyon:CourtCase ;
+           rdfs:comment "specifies the nyon:CourtCase is citing another nyon:CourtCase" ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "cites"@en ;
+           skos:exactMatch "http://lmss.sali.org/RdpSPh3bFHYrQ3vYPDwJYB" .
+
+
+###  https://w3id.org/def/nyon#defendentArgument
+nyon:defendentArgument rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf nyon:makeArgument ;
+                       rdfs:domain nyon:Argument ;
+                       rdfs:range nyon:Defendant ;
+                       rdfs:comment "specifies the argument made by the defendant (nyon:Defendant) of nyon:CourtCase" ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "defendantArgument" .
+
+
+###  https://w3id.org/def/nyon#hasAuthor
+nyon:hasAuthor rdf:type owl:ObjectProperty ;
+               rdfs:domain nyon:CourtCase ;
+               rdfs:range nyon:Author ;
+               rdfs:comment "specifies an author (nyon:Author) (any judge (nyon:Judge) from the bench) of the nyon:CourtCase" ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "hasAuthor"@en .
+
+
+###  https://w3id.org/def/nyon#hasBench
+nyon:hasBench rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain nyon:CourtCase ;
+              rdfs:range nyon:Bench ;
+              rdfs:comment "specifies the bench associated with nyon:Bench of the nyon:CourtCase" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasBench"@en .
+
+
+###  https://w3id.org/def/nyon#hasCourtLoc
+nyon:hasCourtLoc rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf owl:topObjectProperty ;
+                 rdfs:domain nyon:Court ;
+                 rdfs:range nyon:Location ;
+                 rdfs:comment "specifies the location of the nyon:Court" ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "hasCourtLoc"@en .
+
+
+###  https://w3id.org/def/nyon#hasCourtOfficial
+nyon:hasCourtOfficial rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf owl:topObjectProperty ;
+                      rdfs:domain nyon:CourtCase ;
+                      rdfs:range nyon:Court_Official ;
+                      rdfs:comment "specifies the court official represented with nyon:CourtOfficial connected to the nyon:CourtCase" ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                      rdfs:label "hasCourtOfficial"@en .
+
+
+###  https://w3id.org/def/nyon#hasDateOfJudgment
+nyon:hasDateOfJudgment rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf owl:topObjectProperty ;
+                       rdfs:domain nyon:Court ;
+                       rdfs:range nyon:DateOfJudgment ;
+                       rdfs:comment "specifies the date of the judgment of the nyon:CourtCase" ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "hasDateOfJudgment"@en .
+
+
+###  https://w3id.org/def/nyon#hasEvidence
+nyon:hasEvidence rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf owl:topObjectProperty ;
+                 rdfs:domain nyon:CourtCase ;
+                 rdfs:range nyon:Evidence ;
+                 rdfs:comment "specifies the evidence associated with the nyon:Evidence instance for the nyon:CourtCase" ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "hasEvidence"@en .
+
+
+###  https://w3id.org/def/nyon#hasEvidenceLoc
+nyon:hasEvidenceLoc rdf:type owl:ObjectProperty ;
+                    rdfs:subPropertyOf owl:topObjectProperty ;
+                    rdfs:domain nyon:Evidence ;
+                    rdfs:range nyon:Location ;
+                    rdfs:comment "specifies the evidence location associated with the nyon:Evidence instance for the nyon:CourtCase" ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "hasEvidenceLoc"@en .
+
+
+###  https://w3id.org/def/nyon#hasFact
+nyon:hasFact rdf:type owl:ObjectProperty ;
+             rdfs:subPropertyOf owl:topObjectProperty ;
+             rdfs:domain nyon:CourtCase ;
+             rdfs:range nyon:Fact ;
+             rdfs:comment "specifies the fact associated with nyon:Fact belonging to a specific nyon:CourtCase" ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "hasFact"@en .
+
+
+###  https://w3id.org/def/nyon#hasFinalDecision
+nyon:hasFinalDecision rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf owl:topObjectProperty ;
+                      rdfs:domain nyon:CourtCase ;
+                      rdfs:range nyon:CourtDecision ;
+                      rdfs:comment "specifies the final verdict associated with the nyon:CourtCase" ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                      rdfs:label "hasFinalDecision"@en .
+
+
+###  https://w3id.org/def/nyon#hasIssue
+nyon:hasIssue rdf:type owl:ObjectProperty ,
+                       owl:FunctionalProperty ;
+              rdfs:domain nyon:CourtCase ;
+              rdfs:range nyon:Issue ;
+              rdfs:comment "specifies the issue associated with the nyon:Issue instance mentioned in the nyon:CourtCase" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasIssue"@en .
+
+
+###  https://w3id.org/def/nyon#hasJudge
+nyon:hasJudge rdf:type owl:ObjectProperty ;
+              rdfs:domain nyon:CourtCase ;
+              rdfs:range nyon:Judge ;
+              rdfs:comment "specifies the judicial body (nyon:Judge) of nyon:CourtCase"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasJudge"@en .
+
+
+###  https://w3id.org/def/nyon#hasJudgmentType
+nyon:hasJudgmentType rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf owl:topObjectProperty ;
+                     rdfs:domain nyon:CourtCase ;
+                     rdfs:comment "specifies the type of judgment (nyon:CaseType) for nyon:CourtCase" ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                     rdfs:label "hasJudgmentType"@en .
+
+
+###  https://w3id.org/def/nyon#hasJurisdiction
+nyon:hasJurisdiction rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf owl:topObjectProperty ;
+                     rdfs:domain nyon:Court ;
+                     rdfs:range nyon:Jurisdiction ;
+                     rdfs:comment "specifies the jurisdiction (nyon:Jurisdiction) for nyon:Court" ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                     rdfs:label "hasJurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#hasObiterDictum
+nyon:hasObiterDictum rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf owl:topObjectProperty ;
+                     rdfs:domain nyon:CourtCase ;
+                     rdfs:range nyon:ObiterDictum ;
+                     rdfs:comment "specifies the obiter dicta associated with nyon:ObiterDictum mentioned in nyon:CourtCase" ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                     rdfs:label "hasObiterDictum"@en .
+
+
+###  https://w3id.org/def/nyon#hasOpinion
+nyon:hasOpinion rdf:type owl:ObjectProperty ;
+                rdfs:domain nyon:Judge ;
+                rdfs:range nyon:Opinion ;
+                rdfs:comment "represnts the judge opinion on the case either with majority, dissent or concurrence"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "hasOpinion"@en .
+
+
+###  https://w3id.org/def/nyon#hasParty
+nyon:hasParty rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain nyon:CourtCase ;
+              rdfs:range nyon:Party ;
+              rdfs:comment "specifies the party (nyon:Party) associated with nyon:CourtCase" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasParty"@en .
+
+
+###  https://w3id.org/def/nyon#hasPartyType
+nyon:hasPartyType rdf:type owl:ObjectProperty ;
+                  rdfs:subPropertyOf owl:topObjectProperty ;
+                  rdfs:domain nyon:Party ;
+                  rdfs:range nyon:Party_Type ;
+                  rdfs:comment "specifies the type of party (nyon:PartyType) involved in nyon:CourtCase" ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "hasPartyType"@en .
+
+
+###  https://w3id.org/def/nyon#hasPolicePersonnel
+nyon:hasPolicePersonnel rdf:type owl:ObjectProperty ;
+                        rdfs:domain nyon:CourtCase ;
+                        rdfs:range nyon:Investigator ;
+                        rdfs:comment "specifies the police officer (nyon:PolicePersonnel) doing mentioned in nyon:CourtCase" ;
+                        rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                        rdfs:label "hasPolicePersonnel"@en .
+
+
+###  https://w3id.org/def/nyon#hasProvision
+nyon:hasProvision rdf:type owl:ObjectProperty ;
+                  rdfs:domain nyon:CourtCase ;
+                  rdfs:range nyon:Provision ;
+                  rdfs:comment "specifies a clause or norm (nyon:Provision) in a legal instrument or a law" ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "hasProvision"@en .
+
+
+###  https://w3id.org/def/nyon#hasRatioDecidendi
+nyon:hasRatioDecidendi rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf owl:topObjectProperty ;
+                       rdfs:domain nyon:CourtCase ;
+                       rdfs:range nyon:RatioDecidendi ;
+                       rdfs:comment "specifies the judges ratio of decision (nyon:RatioDecidendi) for nyon:CourtCase" ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "hasRatioDecidendi"@en .
+
+
+###  https://w3id.org/def/nyon#hasRulingOf
+nyon:hasRulingOf rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf owl:topObjectProperty ;
+                 rdf:type owl:FunctionalProperty ;
+                 rdfs:domain nyon:CourtCase ;
+                 rdfs:range nyon:Court ;
+                 rdfs:comment "specifies the ruling (previous judgments nyon:CourtCase) of the lower court (nyon:Court)" ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "hasRulingOf"@en .
+
+
+###  https://w3id.org/def/nyon#hasStatue
+nyon:hasStatue rdf:type owl:ObjectProperty ;
+               rdfs:subPropertyOf owl:topObjectProperty ;
+               rdfs:domain nyon:CourtCase ;
+               rdfs:range nyon:Statute ;
+               rdfs:comment "specifies the statute (nyon:Statute) mentioned in nyon:CourtCase" ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "hasStatue"@en .
+
+
+###  https://w3id.org/def/nyon#hasWitness
+nyon:hasWitness rdf:type owl:ObjectProperty ;
+                rdfs:subPropertyOf owl:topObjectProperty ;
+                rdfs:domain nyon:CourtCase ;
+                rdfs:range nyon:Witness ;
+                rdfs:comment "specifies the witness (nyon:Witness) mentioned in nyon:CourtCase" ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "hasWitness"@en .
+
+
+###  https://w3id.org/def/nyon#hasWordPhrase
+nyon:hasWordPhrase rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf owl:topObjectProperty ;
+                   rdfs:domain nyon:CourtCase ;
+                   rdfs:range nyon:WordAndPhrase ;
+                   rdfs:comment "specifies the phrases and words (specially nyon:Issue) mentioned in nyon:CourtCase" ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                   rdfs:label "hasWordPhrase"@en .
+
+
+###  https://w3id.org/def/nyon#hasWords
+nyon:hasWords rdf:type owl:ObjectProperty ;
+              rdfs:domain nyon:CourtCase ;
+              rdfs:range nyon:CatchWord ;
+              rdfs:comment "signifies the domain words, facts and issue related words in the case" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasWords"@en .
+
+
+###  https://w3id.org/def/nyon#makeArgument
+nyon:makeArgument rdf:type owl:ObjectProperty ;
+                  rdfs:subPropertyOf owl:topObjectProperty ;
+                  rdfs:comment "specifies the arguments done in nyon:CourtCase by some party (nyon:Party)" ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "makeArgument"@en .
+
+
+###  https://w3id.org/def/nyon#part_of
+nyon:part_of rdf:type owl:ObjectProperty ;
+             rdfs:comment "signifies the relation of \"part_of\" some resource/activity/content etc." ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "part_of" .
+
+
+###  https://w3id.org/def/nyon#petitionerArgument
+nyon:petitionerArgument rdf:type owl:ObjectProperty ;
+                        rdfs:subPropertyOf nyon:makeArgument ;
+                        rdfs:domain nyon:Argument ;
+                        rdfs:range nyon:Petitioner ;
+                        rdfs:comment "specifies the argument made by the Petitioner (nyon:Petitioner) of nyon:CourtCase" ;
+                        rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                        rdfs:label "petitionerArgument" .
+
+
+###  https://w3id.org/def/nyon#plaintiffArgument
+nyon:plaintiffArgument rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf nyon:makeArgument ;
+                       rdfs:domain nyon:Argument ;
+                       rdfs:range nyon:Plaintiff ;
+                       rdfs:comment "specifies the argument made by the plaintiff (nyon:Plaintiff) of nyon:CourtCase" ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "plaintiffArgument" .
+
+
+###  https://w3id.org/def/nyon#respondentArgument
+nyon:respondentArgument rdf:type owl:ObjectProperty ;
+                        rdfs:subPropertyOf nyon:makeArgument ;
+                        rdfs:domain nyon:Argument ;
+                        rdfs:range nyon:Respondent ;
+                        rdfs:comment "specifies the argument made by the respondent (nyon:Respondent) of nyon:CourtCase" ;
+                        rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                        rdfs:label "respondentArgument" .
+
+
+###  https://w3id.org/def/nyon#withConcurrence
+nyon:withConcurrence rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf nyon:hasOpinion ;
+                     rdfs:domain nyon:Judge ;
+                     rdfs:range nyon:Concurrence ;
+                     rdfs:comment "specifies the judge (nyon:Judge) gives the opinion in concurrence (nyon:Concurrence) of the court" ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                     rdfs:label "withConcurrence"@en .
+
+
+###  https://w3id.org/def/nyon#withDissent
+nyon:withDissent rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf nyon:hasOpinion ;
+                 rdfs:domain nyon:Judge ;
+                 rdfs:range nyon:Dissent ;
+                 rdfs:comment "specifies the judge (nyon:Judge) gives the opinion in dissent (nyon:Dissent) of the court" ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "withDissent"@en .
+
+
+###  https://w3id.org/def/nyon#withMajority
+nyon:withMajority rdf:type owl:ObjectProperty ;
+                  rdfs:subPropertyOf nyon:hasOpinion ;
+                  rdfs:domain nyon:Judge ;
+                  rdfs:range nyon:Majority ;
+                  rdfs:comment "specifies the judge (nyon:Judge) gives the opinion in majority (nyon:Majority) of the court" ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "withMajority"@en .
+
+
+###  https://w3id.org/def/nyon#worksIn
+nyon:worksIn rdf:type owl:ObjectProperty ;
+             rdfs:subPropertyOf owl:topObjectProperty ;
+             rdfs:domain nyon:Court_Official ;
+             rdfs:range nyon:Court ;
+             rdfs:comment "specifies the judge (nyon:Judge) working in court (nyon:Court)" ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "worksIn"@en .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#beginIndex
+<http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#beginIndex> rdf:type owl:DatatypeProperty ,
+                                                                                     owl:FunctionalProperty ;
+                                                                            rdfs:range xsd:nonNegativeInteger ;
+                                                                            rdfs:comment "property representing a non-negative integer value to determine the beginning index of the string/sentence(s)."@en ;
+                                                                            rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                                                                            rdfs:label "nif-core:beginIndex"@en .
+
+
+###  http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#endIndex
+<http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#endIndex> rdf:type owl:DatatypeProperty ;
+                                                                          rdfs:comment "property representing a non-negative integer value to determine the end index of the string/sentence(s)."@en ;
+                                                                          rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                                                                          rdfs:label "nif-core:endIndex"@en .
+
+
+###  https://w3id.org/def/nyon#COFirstName
+nyon:COFirstName rdf:type owl:DatatypeProperty ;
+                 rdfs:subPropertyOf nyon:courtOffName ;
+                 rdfs:domain nyon:Court_Official ;
+                 rdfs:range xsd:string ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "COFirstName"@en .
+
+
+###  https://w3id.org/def/nyon#COLastName
+nyon:COLastName rdf:type owl:DatatypeProperty ;
+                rdfs:subPropertyOf nyon:courtOffName ;
+                rdfs:domain nyon:Court_Official ;
+                rdfs:range xsd:string ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "COLastName"@en .
+
+
+###  https://w3id.org/def/nyon#IssueText
+nyon:IssueText rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+               rdfs:label "issueText"@en .
+
+
+###  https://w3id.org/def/nyon#accussedArgumentText
+nyon:accussedArgumentText rdf:type owl:DatatypeProperty ;
+                          rdfs:subPropertyOf nyon:argumentText ;
+                          rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                          rdfs:label "accussedArgumentText"@en .
+
+
+###  https://w3id.org/def/nyon#argumentText
+nyon:argumentText rdf:type owl:DatatypeProperty ;
+                  rdfs:subPropertyOf owl:topDataProperty ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                  rdfs:label "argumentText"@en .
+
+
+###  https://w3id.org/def/nyon#catchwordValue
+nyon:catchwordValue rdf:type owl:DatatypeProperty ;
+                    rdfs:subPropertyOf owl:topDataProperty ;
+                    rdfs:domain nyon:CatchWord ;
+                    rdfs:range xsd:string ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "catchwordValue"@en .
+
+
+###  https://w3id.org/def/nyon#concurrenceText
+nyon:concurrenceText rdf:type owl:DatatypeProperty ;
+                     rdfs:subPropertyOf nyon:judgeOpinionText ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                     rdfs:label "concurrenceText"@en .
+
+
+###  https://w3id.org/def/nyon#courtName
+nyon:courtName rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain nyon:Court ;
+               rdfs:range xsd:string ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "courtName"@en .
+
+
+###  https://w3id.org/def/nyon#courtOffName
+nyon:courtOffName rdf:type owl:DatatypeProperty ;
+                  rdfs:subPropertyOf owl:topDataProperty ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "courtOffName"@en .
+
+
+###  https://w3id.org/def/nyon#dateOfJudgment
+nyon:dateOfJudgment rdf:type owl:DatatypeProperty ;
+                    rdfs:subPropertyOf owl:topDataProperty ;
+                    rdfs:domain nyon:DateOfJudgment ;
+                    rdfs:range xsd:dateTime ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "dateOfJudgment"@en .
+
+
+###  https://w3id.org/def/nyon#defendantArgumentText
+nyon:defendantArgumentText rdf:type owl:DatatypeProperty ;
+                           rdfs:subPropertyOf nyon:argumentText ;
+                           rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                           rdfs:label "defendantArgumentText"@en .
+
+
+###  https://w3id.org/def/nyon#dissentText
+nyon:dissentText rdf:type owl:DatatypeProperty ;
+                 rdfs:subPropertyOf nyon:judgeOpinionText ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                 rdfs:label "dissentText"@en .
+
+
+###  https://w3id.org/def/nyon#equivalentCitation
+nyon:equivalentCitation rdf:type owl:DatatypeProperty ;
+                        rdfs:subPropertyOf owl:topDataProperty ;
+                        rdfs:domain nyon:CourtCase ;
+                        rdfs:range xsd:string ;
+                        owl:propertyDisjointWith nyon:neutralCitations ;
+                        rdfs:comment "equivalent citations provided by the various law reporters."@en ;
+                        rdfs:isDefinedBy "https://w3id.org/def/nyon#" .
+
+
+###  https://w3id.org/def/nyon#evidenceLocation
+nyon:evidenceLocation rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:domain nyon:Evidence ;
+                      rdfs:range xsd:string ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                      rdfs:label "evidenceLocation"@en .
+
+
+###  https://w3id.org/def/nyon#factText
+nyon:factText rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf owl:topDataProperty ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+              rdfs:label "factText"@en .
+
+
+###  https://w3id.org/def/nyon#finalVerdictText
+nyon:finalVerdictText rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                      rdfs:label "finalVerdictText"@en .
+
+
+###  https://w3id.org/def/nyon#firstName
+nyon:firstName rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf nyon:partyName ;
+               rdfs:domain nyon:Party ;
+               rdfs:range xsd:string ;
+               owl:propertyDisjointWith nyon:lastName ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "firstName"@en .
+
+
+###  https://w3id.org/def/nyon#hasCaseID
+nyon:hasCaseID rdf:type owl:DatatypeProperty ;
+               rdfs:domain nyon:CourtCase ;
+               rdfs:range xsd:string ;
+               rdfs:comment "Case has a unique ID"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "caseID" .
+
+
+###  https://w3id.org/def/nyon#hasCaseName
+nyon:hasCaseName rdf:type owl:DatatypeProperty ;
+                 rdfs:domain nyon:CourtCase ;
+                 rdfs:range xsd:string ;
+                 rdfs:comment "represents the name of a case usually contains the name of both the parties"@en ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "caseName" .
+
+
+###  https://w3id.org/def/nyon#hasDate
+nyon:hasDate rdf:type owl:DatatypeProperty ;
+             rdfs:subPropertyOf nyon:dateOfJudgment ;
+             rdfs:domain nyon:DateOfJudgment ;
+             rdfs:range xsd:int ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "hasDate"@en .
+
+
+###  https://w3id.org/def/nyon#hasDesignation
+nyon:hasDesignation rdf:type owl:DatatypeProperty ;
+                    rdfs:subPropertyOf nyon:hasPolicePersonnelName ;
+                    rdfs:domain nyon:Investigator ;
+                    rdfs:range xsd:string ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "hasDesignation"@en .
+
+
+###  https://w3id.org/def/nyon#hasMonth
+nyon:hasMonth rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf nyon:dateOfJudgment ;
+              rdfs:domain nyon:DateOfJudgment ;
+              rdfs:range xsd:string ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "hasMonth"@en .
+
+
+###  https://w3id.org/def/nyon#hasPolicePersonnelName
+nyon:hasPolicePersonnelName rdf:type owl:DatatypeProperty ;
+                            rdfs:domain nyon:Investigator ;
+                            rdfs:range xsd:string ;
+                            rdfs:comment "represents the name of the police personnel involved in the case"@en ;
+                            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                            rdfs:label "hasPolicePersonnelName"@en .
+
+
+###  https://w3id.org/def/nyon#hasYear
+nyon:hasYear rdf:type owl:DatatypeProperty ;
+             rdfs:subPropertyOf nyon:dateOfJudgment ;
+             rdfs:domain nyon:DateOfJudgment ;
+             rdfs:range xsd:int ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "hasYear"@en .
+
+
+###  https://w3id.org/def/nyon#judgeOpinionText
+nyon:judgeOpinionText rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                      rdfs:label "judgeOpinionText"@en .
+
+
+###  https://w3id.org/def/nyon#lastName
+nyon:lastName rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf nyon:partyName ;
+              rdfs:domain nyon:Party ;
+              rdfs:range xsd:string ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "lastName"@en .
+
+
+###  https://w3id.org/def/nyon#locationName
+nyon:locationName rdf:type owl:DatatypeProperty ;
+                  rdfs:subPropertyOf owl:topDataProperty ;
+                  rdfs:domain nyon:Location ;
+                  rdfs:range xsd:string ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "locationName"@en .
+
+
+###  https://w3id.org/def/nyon#majorityText
+nyon:majorityText rdf:type owl:DatatypeProperty ;
+                  rdfs:subPropertyOf nyon:judgeOpinionText ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                  rdfs:label "majorityText"@en .
+
+
+###  https://w3id.org/def/nyon#neutralCitations
+nyon:neutralCitations rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:domain nyon:CourtCase ;
+                      rdfs:range xsd:string ;
+                      rdfs:comment "represents neutral citations given by the court itself"@en ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" .
+
+
+###  https://w3id.org/def/nyon#otherText
+nyon:otherText rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+               rdfs:label "otherText"@en .
+
+
+###  https://w3id.org/def/nyon#partyName
+nyon:partyName rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "partyName"@en .
+
+
+###  https://w3id.org/def/nyon#petitionerArgumentText
+nyon:petitionerArgumentText rdf:type owl:DatatypeProperty ;
+                            rdfs:subPropertyOf nyon:argumentText ;
+                            rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                            rdfs:label "petitionerArgumentText"@en .
+
+
+###  https://w3id.org/def/nyon#plaintiffArgumentText
+nyon:plaintiffArgumentText rdf:type owl:DatatypeProperty ;
+                           rdfs:subPropertyOf nyon:argumentText ;
+                           rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                           rdfs:label "plaintiffArgumentText"@en .
+
+
+###  https://w3id.org/def/nyon#rationaleText
+nyon:rationaleText rdf:type owl:DatatypeProperty ;
+                   rdfs:subPropertyOf owl:topDataProperty ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                   rdfs:label "rationaleText"@en .
+
+
+###  https://w3id.org/def/nyon#respondentArgumentText
+nyon:respondentArgumentText rdf:type owl:DatatypeProperty ;
+                            rdfs:subPropertyOf nyon:argumentText ;
+                            rdfs:isDefinedBy "https://w3id.org/def/nyon#"@en ;
+                            rdfs:label "respondentArgumentText"@en .
+
+
+###  https://w3id.org/def/nyon#wFirstName
+nyon:wFirstName rdf:type owl:DatatypeProperty ;
+                rdfs:subPropertyOf nyon:witnessName ;
+                rdfs:domain nyon:Witness ;
+                rdfs:range xsd:string ;
+                owl:propertyDisjointWith nyon:wLastName ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "wFirstName"@en .
+
+
+###  https://w3id.org/def/nyon#wLastName
+nyon:wLastName rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf nyon:witnessName ;
+               rdfs:domain nyon:Witness ;
+               rdfs:range xsd:string ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "wLastName"@en .
+
+
+###  https://w3id.org/def/nyon#witnessName
+nyon:witnessName rdf:type owl:DatatypeProperty ;
+                 rdfs:subPropertyOf owl:topDataProperty ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "witnessName"@en .
+
+
+###  https://w3id.org/def/nyon#witnessStatement
+nyon:witnessStatement rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:domain nyon:Witness ;
+                      rdfs:range xsd:string ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                      rdfs:label "witnessStatement"@en .
+
+
+###  https://w3id.org/def/nyon#wordPhraseValue
+nyon:wordPhraseValue rdf:type owl:DatatypeProperty ;
+                     rdfs:subPropertyOf owl:topDataProperty ;
+                     rdfs:domain nyon:WordAndPhrase ;
+                     rdfs:range xsd:string ;
+                     rdfs:comment "represents the words and phrases contain in the document"@en ;
+                     rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                     rdfs:label "wordPhraseValue"@en .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph
+<http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> rdf:type owl:Class ;
+                                                                           rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Structure> .
+
+
+###  http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Structure
+<http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Structure> rdf:type owl:Class .
+
+
+###  http://purl.org/vocommons/voaf#Vocabulary
+<http://purl.org/vocommons/voaf#Vocabulary> rdf:type owl:Class .
+
+
+###  http://xmlns.com/foaf/0.1/Person
+foaf:Person rdf:type owl:Class ;
+            owl:equivalentClass nyon:Individual ;
+            rdfs:subClassOf nyon:Party_Type ;
+            rdfs:comment "A person" ;
+            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+            rdfs:label "Person"@en .
+
+
+###  https://schema.org/GovernmentOrganization
+<https://schema.org/GovernmentOrganization> rdf:type owl:Class ;
+                                            rdfs:subClassOf nyon:Party_Type ;
+                                            rdfs:comment "party involved (either on both sides or any one) is the government in the case"@en ;
+                                            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                            rdfs:label "Government"@en .
+
+
+###  https://schema.org/Organization
+<https://schema.org/Organization> rdf:type owl:Class ;
+                                  rdfs:subClassOf nyon:Party_Type ;
+                                  rdfs:comment "organization(s) involved as the participant in the case"@en ;
+                                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                  rdfs:label "Organization"@en .
+
+
+###  https://schema.org/Place
+<https://schema.org/Place> rdf:type owl:Class ;
+                           rdfs:subClassOf nyon:Location ;
+                           rdfs:comment "location name or place name"@en ;
+                           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                           rdfs:label "Place"@en .
+
+
+###  https://w3id.org/def/nyon#Accussed
+nyon:Accussed rdf:type owl:Class ;
+              rdfs:subClassOf nyon:Party ;
+              rdfs:comment "person against whom an allegation has been made that he has committed an offence, or who is charge with an offence"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Accused"@en .
+
+
+###  https://w3id.org/def/nyon#Advisory_Jurisdiction
+nyon:Advisory_Jurisdiction rdf:type owl:Class ;
+                           rdfs:subClassOf nyon:Jurisdiction ;
+                           rdfs:comment "jurisdiction type is a advisory jurisdiction"@en ;
+                           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                           rdfs:label "Advisory Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Appellant
+nyon:Appellant rdf:type owl:Class ;
+               rdfs:subClassOf nyon:Party ;
+               rdfs:comment "party who makes an appeal"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Appellant"@en ;
+               owl:sameAs "http://lmss.sali.org/R7uigsz85fFCSPszS6B93dN"@en .
+
+
+###  https://w3id.org/def/nyon#Appellant_Jurisdiction
+nyon:Appellant_Jurisdiction rdf:type owl:Class ;
+                            rdfs:subClassOf nyon:Jurisdiction ;
+                            rdfs:comment "jurisdiction type is a appellant jurisdiction"@en ;
+                            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                            rdfs:label "Appellant Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Argument
+nyon:Argument rdf:type owl:Class ;
+              rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
+              rdfs:comment "Argument made by any of the party"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Argument"@en .
+
+
+###  https://w3id.org/def/nyon#Author
+nyon:Author rdf:type owl:Class ;
+            owl:equivalentClass [ rdf:type owl:Restriction ;
+                                  owl:onProperty nyon:hasAuthor ;
+                                  owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                  owl:onClass nyon:Judge
+                                ] ;
+            rdfs:comment "Author (Judge) who is responsible for a creation of case document"@en ;
+            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+            rdfs:label "Author"@en ;
+            owl:sameAs "(http://lmss.sali.org/Ra6EHlbqrpUT9rxM2PtwIP)"@en .
+
+
+###  https://w3id.org/def/nyon#Bench
+nyon:Bench rdf:type owl:Class ;
+           rdfs:comment "Defines the bench of the case."@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Bench"@en ;
+           owl:sameAs "http://lmss.sali.org/R8w3kl1tpEaQ2woPVs9N8Kf"^^rdf:resource .
+
+
+###  https://w3id.org/def/nyon#CaseDomain
+nyon:CaseDomain rdf:type owl:Class ;
+                rdfs:comment "case belongs to specific proceeding like civil or criminal"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "CaseDomain"@en .
+
+
+###  https://w3id.org/def/nyon#CatchWord
+nyon:CatchWord rdf:type owl:Class ;
+               rdfs:subClassOf [ owl:intersectionOf ( owl:Thing
+                                                      nyon:CaseDomain
+                                                    ) ;
+                                 rdf:type owl:Class
+                               ] ,
+                               [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                        owl:onProperty nyon:hasWords ;
+                                                        owl:someValuesFrom nyon:CaseDomain
+                                                      ]
+                                                      [ rdf:type owl:Restriction ;
+                                                        owl:onProperty nyon:hasWords ;
+                                                        owl:someValuesFrom nyon:Issue
+                                                      ]
+                                                    ) ;
+                                 rdf:type owl:Class
+                               ] ;
+               rdfs:comment "Descriptive words or phrases used to categorise the subject matter of a case along with some keywords representing the issues in the case"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Catchword"@en .
+
+
+###  https://w3id.org/def/nyon#Chief_Meterpolitan_Court
+nyon:Chief_Meterpolitan_Court rdf:type owl:Class ;
+                              rdfs:subClassOf nyon:Courts_for_Criminal ;
+                              rdfs:comment "lower court at metropolitan level after Sessions Court for criminal cases"@en ;
+                              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                              rdfs:label "Chief Meterpolitan Court"@en .
+
+
+###  https://w3id.org/def/nyon#City_Civil_Courts
+nyon:City_Civil_Courts rdf:type owl:Class ;
+                       rdfs:subClassOf nyon:Courts_for_Civil ;
+                       rdfs:comment "lower court at metropolitan level after High Courts for civil cases"@en ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "City Civil Court"@en .
+
+
+###  https://w3id.org/def/nyon#Civil
+nyon:Civil rdf:type owl:Class ;
+           rdfs:subClassOf nyon:CaseDomain ;
+           owl:disjointWith nyon:Criminal ;
+           rdfs:comment "case is a civil case"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Civil"@en .
+
+
+###  https://w3id.org/def/nyon#Concurrence
+nyon:Concurrence rdf:type owl:Class ;
+                 rdfs:subClassOf nyon:Opinion ;
+                 rdfs:comment "decisions result when a judge agrees with the ultimate conclusion made by the majority of the court but disagrees on how they reached that decision" ;
+                 rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                 rdfs:label "Concurrence"@en ;
+                 skos:exactMatch "http://lmss.sali.org/RTNLwK1SAJaRJJu2kYrJZg" .
+
+
+###  https://w3id.org/def/nyon#Country
+nyon:Country rdf:type owl:Class ;
+             rdfs:subClassOf nyon:Location ;
+             rdfs:comment "A country" ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "Country"@en ;
+             owl:sameAs "http://lmss.sali.org/RNrcOpWxQNlCpzR0FTsHNG"@en .
+
+
+###  https://w3id.org/def/nyon#Court
+nyon:Court rdf:type owl:Class ;
+           rdfs:comment "courts in the judicial system"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Court"@en ;
+           owl:sameAs "http://lmss.sali.org/Rafw4pSzJ3S3d8sq6quprG"@en .
+
+
+###  https://w3id.org/def/nyon#CourtCase
+nyon:CourtCase rdf:type owl:Class ;
+               owl:disjointWith nyon:Statute ;
+               rdfs:comment "represents the court judgment given by a court of law"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "CourtCase"@en .
+
+
+###  https://w3id.org/def/nyon#CourtDecision
+nyon:CourtDecision rdf:type owl:Class ;
+                   rdfs:comment "represents the decision made by the court of law in the one of the form of Decree, Judgment or Order."@en ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                   rdfs:label "CourtDecision"@en .
+
+
+###  https://w3id.org/def/nyon#Court_Official
+nyon:Court_Official rdf:type owl:Class ;
+                    rdfs:comment "legal system related people involved in a case"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "CourtOfficial"@en .
+
+
+###  https://w3id.org/def/nyon#Courts_for_Civil
+nyon:Courts_for_Civil rdf:type owl:Class ;
+                      rdfs:subClassOf nyon:CaseDomain ;
+                      rdfs:comment "court for civil cases"@en ;
+                      rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                      rdfs:label "Civil Court"@en ;
+                      owl:sameAs "http://lmss.sali.org/R9uoItz60Ut8I4l3jEH3mSF"@en .
+
+
+###  https://w3id.org/def/nyon#Courts_for_Criminal
+nyon:Courts_for_Criminal rdf:type owl:Class ;
+                         rdfs:subClassOf nyon:CaseDomain ;
+                         rdfs:comment "courts for crimnial cases"@en ;
+                         rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                         rdfs:label "Criminal Court"@en ;
+                         owl:sameAs "http://lmss.sali.org/RihNVfYYtmWzQWciwxquKe"@en .
+
+
+###  https://w3id.org/def/nyon#Courts_of_Smaller_Causes
+nyon:Courts_of_Smaller_Causes rdf:type owl:Class ;
+                              rdfs:subClassOf nyon:Courts_for_Civil ;
+                              rdfs:comment "lowest court after City Civil Courts at metropolitan level for civil cases"@en ;
+                              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                              rdfs:label "Court of Smaller Cause"@en ;
+                              owl:sameAs "http://lmss.sali.org/R9Mmy6MnWY16eR6dlLOKnGO"@en .
+
+
+###  https://w3id.org/def/nyon#Criminal
+nyon:Criminal rdf:type owl:Class ;
+              rdfs:subClassOf nyon:CaseDomain ;
+              rdfs:comment "case is a criminal case"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Criminal"@en ;
+              owl:sameAs "http://lmss.sali.org/RMZ6lNihK8TG4Flhco1yTy" .
+
+
+###  https://w3id.org/def/nyon#DateOfJudgment
+nyon:DateOfJudgment rdf:type owl:Class ;
+                    rdfs:comment "signifies the final date on which the judgment is given by the court of law"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "DateofJudgment"@en .
+
+
+###  https://w3id.org/def/nyon#Decree
+nyon:Decree rdf:type owl:Class ;
+            rdfs:subClassOf nyon:CourtDecision ;
+            rdfs:comment "formal order issued by the judges" ;
+            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+            rdfs:label "Decree"@en .
+
+
+###  https://w3id.org/def/nyon#Defendant
+nyon:Defendant rdf:type owl:Class ;
+               rdfs:subClassOf nyon:Party ;
+               rdfs:comment "a person sued in the court of law"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Defendant"@en ;
+               owl:sameAs "http://lmss.sali.org/RijIqw1HEfQF4ctjWUlgnq"@en .
+
+
+###  https://w3id.org/def/nyon#Dissent
+nyon:Dissent rdf:type owl:Class ;
+             rdfs:subClassOf nyon:Opinion ;
+             rdfs:comment "judges who do not agree with the majority of the Court" ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "Dissent"@en .
+
+
+###  https://w3id.org/def/nyon#District
+nyon:District rdf:type owl:Class ;
+              rdfs:subClassOf nyon:Location ;
+              rdfs:comment "represents district name/location"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "District"@en .
+
+
+###  https://w3id.org/def/nyon#District_Court
+nyon:District_Court rdf:type owl:Class ;
+                    rdfs:subClassOf nyon:Courts_for_Civil ,
+                                    nyon:IndianCourts ;
+                    rdfs:comment "a term in judicial system in India in which a case is heard and judged by at least 2 judges"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "District Court"@en ;
+                    owl:sameAs "http://lmss.sali.org/RCLoy4oZcw6FxnWja39PwnD" .
+
+
+###  https://w3id.org/def/nyon#Division_Bench
+nyon:Division_Bench rdf:type owl:Class ;
+                    rdfs:subClassOf nyon:Bench ;
+                    rdfs:comment "a term in judicial system in India in which a case is heard and judged by at least 2 judges"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "Division Bench"@en .
+
+
+###  https://w3id.org/def/nyon#Evidence
+nyon:Evidence rdf:type owl:Class ;
+              rdfs:comment "evidences presented in front of the court in the case"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Evidence"@en ;
+              owl:sameAs "http://lmss.sali.org/R7c1yU31BO5LWM06a7c0Pfd"@en .
+
+
+###  https://w3id.org/def/nyon#Fact
+nyon:Fact rdf:type owl:Class ;
+          rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
+          rdfs:comment "represents factual statements in the case law"@en ;
+          rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+          rdfs:label "Fact"@en ;
+          owl:sameAs "http://lmss.sali.org/RnKWv1E6U2Ssc5SRsG14NO"@en .
+
+
+###  https://w3id.org/def/nyon#Group
+nyon:Group rdf:type owl:Class ;
+           rdfs:subClassOf nyon:Party_Type ;
+           rdfs:comment "party of the case are the group of people on one side against another group of people or individual or state"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Group"@en .
+
+
+###  https://w3id.org/def/nyon#High_Court
+nyon:High_Court rdf:type owl:Class ;
+                rdfs:subClassOf nyon:IndianCourts ;
+                rdfs:comment "court at the state level"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "High Court"@en .
+
+
+###  https://w3id.org/def/nyon#IndianCourts
+nyon:IndianCourts rdf:type owl:Class ;
+                  rdfs:subClassOf nyon:Court .
+
+
+###  https://w3id.org/def/nyon#Individual
+nyon:Individual rdf:type owl:Class ;
+                rdfs:subClassOf nyon:Party_Type ;
+                rdfs:comment "participants of the case are the individual persons"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "Individual"@en ;
+                owl:sameAs "http://lmss.sali.org/RDCkFrEclhipkoHPgckuFY6"@en .
+
+
+###  https://w3id.org/def/nyon#Investigator
+nyon:Investigator rdf:type owl:Class ;
+                  rdfs:comment "A police officer is a warranted law employee of a police force" ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "PolicePersonnel"@en ;
+                  owl:sameAs "http://lmss.sali.org/RDVQLifN70TJSPCRJJLBgPY"@en .
+
+
+###  https://w3id.org/def/nyon#Issue
+nyon:Issue rdf:type owl:Class ;
+           rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
+           rdfs:comment "issues in the case arised by the party"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Issue"@en ;
+           owl:sameAs "http://lmss.sali.org/RI3QONzSYBIXBgMFfpUDhk" .
+
+
+###  https://w3id.org/def/nyon#Judge
+nyon:Judge rdf:type owl:Class ;
+           rdfs:subClassOf nyon:Court_Official ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty nyon:hasOpinion ;
+                             owl:someValuesFrom nyon:Opinion
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty nyon:worksIn ;
+                             owl:someValuesFrom nyon:Court
+                           ] ;
+           rdfs:comment "A judge is a public official appointed to decide cases in a court of law." ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Judge" ;
+           skos:exactMatch "http://lmss.sali.org/RDnLOdTNWmEc4EhZ0SZXDm7" .
+
+
+###  https://w3id.org/def/nyon#Judgement
+nyon:Judgement rdf:type owl:Class ;
+               rdfs:subClassOf nyon:CourtDecision ;
+               rdfs:comment "Judgement given by the judge "@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Judgement"@en ;
+               owl:sameAs "http://lmss.sali.org/R9jpIjzc10qdgl78jXOZtfm"@en .
+
+
+###  https://w3id.org/def/nyon#Jurisdiction
+nyon:Jurisdiction rdf:type owl:Class ;
+                  rdfs:comment "the extent to which a court of law can exercise its authority over any cases filed across a region"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Larger_Bench
+nyon:Larger_Bench rdf:type owl:Class ;
+                  rdfs:subClassOf nyon:Bench ;
+                  rdfs:comment "a term in judicial system in India in which a case is heard and judged by three or five judges"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Larger Bench"@en .
+
+
+###  https://w3id.org/def/nyon#Lawyer
+nyon:Lawyer rdf:type owl:Class ;
+            rdfs:subClassOf nyon:Court_Official ;
+            rdfs:comment "Lawyer is a term of reference to the attroneys and advocates collectively in litigation"@en ;
+            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+            rdfs:label "Lawyer"@en ;
+            owl:sameAs "http://lmss.sali.org/RcTA2iQmrtqOnX3WrjJIp8"@en .
+
+
+###  https://w3id.org/def/nyon#LearnedCounsel
+nyon:LearnedCounsel rdf:type owl:Class ;
+                    rdfs:subClassOf nyon:Court_Official ;
+                    rdfs:comment "Learned counsel is a term of reference to the lawyers and advocates collectively in litigation"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "LearnedCounsel"@en .
+
+
+###  https://w3id.org/def/nyon#Location
+nyon:Location rdf:type owl:Class ;
+              rdfs:comment "represents the location of the courts, etc and also used for evidence locations"@en ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Location"@en ;
+              owl:sameAs "http://lmss.sali.org/R9aSzp9cEiBCzObnP92jYFX"@en .
+
+
+###  https://w3id.org/def/nyon#Majority
+nyon:Majority rdf:type owl:Class ;
+              rdfs:subClassOf nyon:Opinion ;
+              rdfs:comment "Majority decisions are the ones where a majority of the judges agree" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Majority"@en .
+
+
+###  https://w3id.org/def/nyon#Metropolitan_Magistrate_Courts
+nyon:Metropolitan_Magistrate_Courts rdf:type owl:Class ;
+                                    rdfs:subClassOf nyon:Courts_for_Criminal ;
+                                    rdfs:comment "lowest court after Chief Metropolitan Court at metropolitan level for criminal cases"@en ;
+                                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                    rdfs:label "Metropolitan Magistrate Court"@en .
+
+
+###  https://w3id.org/def/nyon#Metropolitian_Courts
+nyon:Metropolitian_Courts rdf:type owl:Class ;
+                          rdfs:subClassOf nyon:IndianCourts ;
+                          rdfs:comment "court for population more than 10 lakh city "@en ;
+                          rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                          rdfs:label "Metropolitan Court"@en .
+
+
+###  https://w3id.org/def/nyon#Munsif_Court
+nyon:Munsif_Court rdf:type owl:Class ;
+                  rdfs:subClassOf nyon:Courts_for_Civil ;
+                  rdfs:comment "lowest court in heirarchy for civil ases at district level after Principal Junior Civil Court"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Munsif Court"@en .
+
+
+###  https://w3id.org/def/nyon#ObiterDictum
+nyon:ObiterDictum rdf:type owl:Class ;
+                  rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
+                  rdfs:comment "additional obersvations, remarks, and opinions made by the judge that are not the part of the reason for the decision"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Obiter Dictum"@en .
+
+
+###  https://w3id.org/def/nyon#Opinion
+nyon:Opinion rdf:type owl:Class ;
+             owl:equivalentClass [ rdf:type owl:Class ;
+                                   owl:complementOf nyon:Judgement
+                                 ] ;
+             rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> .
+
+
+###  https://w3id.org/def/nyon#Order
+nyon:Order rdf:type owl:Class ;
+           rdfs:subClassOf nyon:CourtDecision ;
+           rdfs:comment "order given by the court"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Order"@en ;
+           owl:sameAs "http://lmss.sali.org/R7ibFsNNncTIYF5AjKUDg7b"@en .
+
+
+###  https://w3id.org/def/nyon#Original_Jurisdiction
+nyon:Original_Jurisdiction rdf:type owl:Class ;
+                           rdfs:subClassOf nyon:Jurisdiction ;
+                           rdfs:comment "jurisdiction type is a original jurisdiction"@en ;
+                           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                           rdfs:label "Original Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Party
+nyon:Party rdf:type owl:Class ;
+           rdfs:comment "party or people involved in the case"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "Party"@en .
+
+
+###  https://w3id.org/def/nyon#Party_Type
+nyon:Party_Type rdf:type owl:Class ;
+                rdfs:comment "represents the types of party involved in the case viz. individual, organization, govt. etc."@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "Party Type"@en .
+
+
+###  https://w3id.org/def/nyon#Petitioner
+nyon:Petitioner rdf:type owl:Class ;
+                rdfs:subClassOf nyon:Party ;
+                rdfs:comment "one who makes the petition"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "Petitioner"@en .
+
+
+###  https://w3id.org/def/nyon#Plaintiff
+nyon:Plaintiff rdf:type owl:Class ;
+               rdfs:subClassOf nyon:Party ;
+               rdfs:comment "party who brings the suit in the court of law"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Plaintiff"@en ;
+               owl:sameAs "http://lmss.sali.org/R9tyJmIM3Lx7OItGji5zPXN"@en .
+
+
+###  https://w3id.org/def/nyon#Precedent
+nyon:Precedent rdf:type owl:Class ;
+               rdfs:comment "all the past cases referred in the current judgment b ythe judge"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Precedent"@en .
+
+
+###  https://w3id.org/def/nyon#Principal_Junior_Civil_Court
+nyon:Principal_Junior_Civil_Court rdf:type owl:Class ;
+                                  rdfs:subClassOf nyon:Courts_for_Civil ;
+                                  rdfs:comment "third lower court in hierarchy at district level for civil cases"@en ;
+                                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                  rdfs:label "Principal Junior Civil Court"@en .
+
+
+###  https://w3id.org/def/nyon#Provision
+nyon:Provision rdf:type owl:Class ;
+               rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                 owl:onProperty nyon:part_of ;
+                                 owl:someValuesFrom nyon:Statute
+                               ] ;
+               rdfs:comment "clause or section number or article number applied/used in the case law"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Provision"@en ;
+               skos:atLabel "Section"@en .
+
+
+###  https://w3id.org/def/nyon#RatioDecidendi
+nyon:RatioDecidendi rdf:type owl:Class ;
+                    rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
+                    rdfs:comment "the rationale for the decision"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "RatioDecidendi"@en .
+
+
+###  https://w3id.org/def/nyon#Respondent
+nyon:Respondent rdf:type owl:Class ;
+                rdfs:subClassOf nyon:Party ;
+                rdfs:comment "party called upon to respond or answer a petition, a cliam or a appeal"@en ;
+                rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                rdfs:label "Respondent"@en ;
+                owl:sameAs "http://lmss.sali.org/RDsxHT4FlaoALPmeZmTt8td"@en .
+
+
+###  https://w3id.org/def/nyon#Review_Jurisdiction
+nyon:Review_Jurisdiction rdf:type owl:Class ;
+                         rdfs:subClassOf nyon:Jurisdiction ;
+                         rdfs:comment "jurisdiction type is a review jurisdiction"@en ;
+                         rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                         rdfs:label "Review Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Session_Court
+nyon:Session_Court rdf:type owl:Class ;
+                   rdfs:subClassOf nyon:Courts_for_Criminal ;
+                   rdfs:comment "lower court at both distrcit and metropolitan level after High Courts specific for criminal cases"@en ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                   rdfs:label "Sessions Court"@en .
+
+
+###  https://w3id.org/def/nyon#Single_Judge
+nyon:Single_Judge rdf:type owl:Class ;
+                  owl:equivalentClass [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                               owl:onProperty nyon:hasBench ;
+                                                               owl:someValuesFrom nyon:Judge
+                                                             ]
+                                                             [ rdf:type owl:Restriction ;
+                                                               owl:onProperty nyon:hasJudge ;
+                                                               owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                                               owl:onClass nyon:Judge
+                                                             ]
+                                                           ) ;
+                                        rdf:type owl:Class
+                                      ] ,
+                                      [ rdf:type owl:Class ;
+                                        owl:complementOf nyon:Judge
+                                      ] ,
+                                      [ rdf:type owl:Class ;
+                                        owl:complementOf [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                                                  owl:onProperty nyon:hasCourtOfficial ;
+                                                                                  owl:someValuesFrom nyon:Judge
+                                                                                ]
+                                                                                [ rdf:type owl:Restriction ;
+                                                                                  owl:onProperty nyon:hasJudge ;
+                                                                                  owl:someValuesFrom nyon:Judge
+                                                                                ]
+                                                                              ) ;
+                                                           rdf:type owl:Class
+                                                         ]
+                                      ] ;
+                  rdfs:subClassOf nyon:Bench ;
+                  rdfs:comment "a case heard and judged by a single judge"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Single Judge"@en .
+
+
+###  https://w3id.org/def/nyon#Solicitor
+nyon:Solicitor rdf:type owl:Class ;
+               rdfs:subClassOf nyon:Court_Official ;
+               rdfs:comment "represents solicitor, learned counsel or laywer of the case"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Solicitor"@en .
+
+
+###  https://w3id.org/def/nyon#Special_Bench
+nyon:Special_Bench rdf:type owl:Class ;
+                   rdfs:subClassOf nyon:Bench ;
+                   rdfs:comment "means the Bench constituted by or under the orders of the Chief Justice to hear a case or particular class of cases"@en ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                   rdfs:label "Special Bench"@en .
+
+
+###  https://w3id.org/def/nyon#State
+nyon:State rdf:type owl:Class ;
+           rdfs:subClassOf nyon:Location ,
+                           nyon:Party_Type ;
+           rdfs:comment "represents state name/location"@en ;
+           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+           rdfs:label "State"@en .
+
+
+###  https://w3id.org/def/nyon#Statute
+nyon:Statute rdf:type owl:Class ;
+             rdfs:comment "includes the acts and norms of the law"@en ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "Statute"@en .
+
+
+###  https://w3id.org/def/nyon#Sub_Court
+nyon:Sub_Court rdf:type owl:Class ;
+               owl:equivalentClass [ rdf:type owl:Class ;
+                                     owl:complementOf nyon:Tribunal
+                                   ] ;
+               rdfs:subClassOf nyon:Courts_for_Civil ;
+               rdfs:comment "second lower court in hierarchy at District level for civil cases"@en ;
+               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+               rdfs:label "Sub Court"@en .
+
+
+###  https://w3id.org/def/nyon#SupremeCourt
+nyon:SupremeCourt rdf:type owl:Class ;
+                  rdfs:subClassOf nyon:IndianCourts ;
+                  rdfs:comment "highest court in the judicial system"@en ;
+                  rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                  rdfs:label "Supreme Court of India"@en .
+
+
+###  https://w3id.org/def/nyon#Taluka
+nyon:Taluka rdf:type owl:Class ;
+            rdfs:subClassOf nyon:Location ;
+            rdfs:comment "represents taluka name/location"@en ;
+            rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+            rdfs:label "Taluka"@en .
+
+
+###  https://w3id.org/def/nyon#Tribunal
+nyon:Tribunal rdf:type owl:Class ;
+              rdfs:subClassOf nyon:IndianCourts ;
+              rdfs:comment "represents the special courts for special issues or disputes" ;
+              rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+              rdfs:label "Tribunal" .
+
+
+###  https://w3id.org/def/nyon#Tribunal_Bench
+nyon:Tribunal_Bench rdf:type owl:Class ;
+                    rdfs:subClassOf nyon:Bench ;
+                    rdfs:comment "Bench deals with tribunals cases"@en ;
+                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                    rdfs:label "Tribunal Bench"@en .
+
+
+###  https://w3id.org/def/nyon#Witness
+nyon:Witness rdf:type owl:Class ;
+             rdfs:comment "witness involved/presented in the case"@en ;
+             rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+             rdfs:label "Witness"@en ;
+             owl:sameAs "http://lmss.sali.org/R9tZFXPrXQJWHbqSgtCQxJF"@en .
+
+
+###  https://w3id.org/def/nyon#WordAndPhrase
+nyon:WordAndPhrase rdf:type owl:Class ;
+                   rdfs:comment "words or phrases exctracted from the case to make the search better for the cases or find relevent cases or judgment"@en ;
+                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                   rdfs:label "WordsAndPhrases"@en .
+
+
+###  https://w3id.org/def/nyon#Writ_Jurisdiction
+nyon:Writ_Jurisdiction rdf:type owl:Class ;
+                       rdfs:subClassOf nyon:Jurisdiction ;
+                       rdfs:comment "jurisdiction type is a writ jurisdiction"@en ;
+                       rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                       rdfs:label "Writ Jurisdiction"@en .
+
+
+###  https://w3id.org/def/nyon#Judicial_Magistrate_Court(First_Class)
+<https://w3id.org/def/nyon#Judicial_Magistrate_Court(First_Class)> rdf:type owl:Class ;
+                                                                   rdfs:subClassOf nyon:Courts_for_Criminal ;
+                                                                   rdfs:comment "second lower court at distrcit level after districit level Session Court for criminal cases"@en ;
+                                                                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                                                   rdfs:label "Judicial Magistrate Court (First Class)"@en .
+
+
+###  https://w3id.org/def/nyon#Judicial_Magistrate_Court(Second_Class)
+<https://w3id.org/def/nyon#Judicial_Magistrate_Court(Second_Class)> rdf:type owl:Class ;
+                                                                    rdfs:subClassOf nyon:Courts_for_Criminal ;
+                                                                    rdfs:comment "lowest court after Judicial Magistrate Court (First Class) at distrcit level for criminal cases"@en ;
+                                                                    rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
+                                                                    rdfs:label "Judicial Magistrate Court (Second Class)"@en .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  https://w3id.org/def/nyon#
+<https://w3id.org/def/nyon#> rdf:type owl:NamedIndividual ,
+                                      <http://purl.org/vocommons/voaf#Vocabulary> .
+
+
+#################################################################
+#    General axioms
+#################################################################
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( <https://schema.org/GovernmentOrganization>
+                <https://schema.org/Organization>
+                nyon:Group
+                nyon:Individual
+                nyon:State
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( <https://schema.org/Place>
+                nyon:Country
+                nyon:District
+                nyon:State
+                nyon:Taluka
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( nyon:Advisory_Jurisdiction
+                nyon:Appellant_Jurisdiction
+                nyon:Original_Jurisdiction
+                nyon:Review_Jurisdiction
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( nyon:Chief_Meterpolitan_Court
+                nyon:Metropolitan_Magistrate_Courts
+                nyon:Session_Court
+                <https://w3id.org/def/nyon#Judicial_Magistrate_Court(First_Class)>
+                <https://w3id.org/def/nyon#Judicial_Magistrate_Court(Second_Class)>
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( nyon:City_Civil_Courts
+                nyon:Courts_of_Smaller_Causes
+                nyon:District_Court
+                nyon:Munsif_Court
+                nyon:Principal_Junior_Civil_Court
+                nyon:Sub_Court
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( nyon:Concurrence
+                nyon:Dissent
+                nyon:Majority
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( nyon:Investigator
+                nyon:Judge
+                nyon:Solicitor
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( nyon:appellantArgument
+                nyon:defendentArgument
+                nyon:petitionerArgument
+                nyon:plaintiffArgument
+                nyon:respondentArgument
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( nyon:accussedArgumentText
+                nyon:defendantArgumentText
+                nyon:petitionerArgumentText
+                nyon:plaintiffArgumentText
+                nyon:respondentArgumentText
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( nyon:concurrenceText
+                nyon:dissentText
+                nyon:majorityText
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( nyon:hasDate
+                nyon:hasMonth
+                nyon:hasYear
+              )
+] .
+
+
+###  Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi
