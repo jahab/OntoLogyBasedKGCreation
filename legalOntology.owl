@@ -872,7 +872,7 @@ nyon:Accussed rdf:type owl:Class ;
               rdfs:subClassOf nyon:Party ;
               rdfs:comment "person against whom an allegation has been made that he has committed an offence, or who is charge with an offence"@en ;
               rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
-              rdfs:label "Accused"@en .
+              rdfs:label "Accussed"@en .
 
 
 ###  https://w3id.org/def/nyon#Advisory_Jurisdiction

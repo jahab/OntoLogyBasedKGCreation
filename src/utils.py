@@ -1,3 +1,9 @@
+import pandas as pd
+import os
+from neo4j import GraphDatabase
+import json
+
+
 def get_node_labels(tx):
     result = tx.run("CALL db.labels()")
     return [record["label"] for record in result]
@@ -101,6 +107,172 @@ def find_property(tx,node):
     """
     return list(tx.run(query, node = node))
 
+def get_ontology_in_graph(tx):
+    #This link has same schema as the legalOntology.owl file
+    query = """
+        CALL n10s.graphconfig.init();
+        CREATE CONSTRAINT n10s_unique_uri ON (r:Resource)
+        ASSERT r.uri IS UNIQUE;
+        CALL n10s.onto.import.fetch("https://pastebin.com/raw/uYgpUDRr","Turtle"); 
+    """
+    tx.run(query)
+
+
+def fetch_relationship_from_ontology(driver):
+    allowed_relationships = []
+    with driver.session() as session:
+        edges = session.execute_read(getAllRelationships)
+        for e in edges:
+            allowed_relationships.append(tuple([e["from_node"], e["relation"], e["to_node"], e['comment']]))
+    return allowed_relationships
+
+def fetch_properties_from_ontology(driver)->list:
+    allowed_properties = []
+    with driver.session() as session:
+        edges = session.execute_read(get_all_properties)
+        for e in edges:
+            allowed_properties.append(tuple([e["from_node"], e["property"], e["datatype"]]))
+    return allowed_properties
+
+def format_relationships_in_md(allowed_relationships:list)->list:
+    rows = []
+    for index, (n1, rel, n2, comment) in enumerate(allowed_relationships):
+        if comment == None:
+            comment = ""    
+        rows.append(f"| {n1:<10} | {rel:<12} | {n2:<6} | {comment:<54} |")
+
+    header =  "| Node1     | Relationship | Node2  | Comment                                                |"
+    divider = "|-----------|--------------|--------|--------------------------------------------------------|"
+    markdown_table = "\n".join([header, divider] + rows)
+    print(markdown_table)
+
+def format_properties_in_md(allowed_properties:list)->list:
+    rows = []
+    for index, (n1, rel, n2) in enumerate(allowed_properties):
+        if comment == None:
+            comment = ""    
+        rows.append(f"| {n1:<10} | {rel:<12} | {n2:<6}    |")
+
+    header =  "| Node1     | Property     | DataType                      |"
+    divider = "|-----------|--------------|-----------|-------------------|"
+    markdown_table = "\n".join([header, divider] + rows)
+    print(markdown_table)
+
+
+
+def check_valid_relationship(tx, node1, relationship):
+    """
+    Take a node and relationship as input and return if node and relationship exist or not
+    If True tx.run will return two nodes
+    If Flase tx.run will return empty list
+    """
+    query = """
+    MATCH (p:n4sch__Class {n4sch__name: $node1})<-[]->(o:n4sch__Relationship {n4sch__name:$relationship})
+    RETURN p,o
+    """
+    return list(tx.run(query,node1 = node1,relationship=relationship))
+
+def refine_parent_child_relation(node1_type, node2_type, node1_val, node2_val, relationship):
+    # print("Relation Not Found.. Checking for subclasses")
+    print(node1_type, node2_type)
+    invalid_node = True
+    with driver.session() as session:
+        subclasses_nodes = session.execute_read(find_subclass, node1_type) 
+    # print(subclasses_nodes)
+    for sc in subclasses_nodes:
+        if (node1_type == sc['child'] and node2_type == sc['parent']):
+            # print(sc['child'], sc['parent'])
+            print("=========relation_correct")
+            invalid_node = False
+            break
+        elif(node1_type == sc['parent'] and node2_type == sc['child']):
+            node1_type = sc['child']
+            node2_type = sc['parent']
+            temp = node1_val
+            node1_val = node2_val
+            node2_val = temp
+            invalid_node = False
+            break
+        else:
+            invalid_node = True
+    return node1_type, node2_type, node1_val, node2_val, invalid_node
+    #Now check if the node1 and Node2 are interchanges or not?  
+
+
+
+def make_correct_pairs(jsondata):
+    for json in jsondata:
+        for item in json:
+            node1_type = item["node1_type"]
+            node2_type = item["node2_type"]
+            node1_value = item["node1_value"]
+            node2_value = item["node2_value"]
+            relationship = item["relationship"]
+            invalid_relation = False
+            if relationship == "is_a":
+                # Check if the extracted node is a valid subclass or not
+                node1_type, node2_type, node1_value, node2_value,invalid_node = refine_parent_child_relation(node1_type,node2_type,node1_value,node2_value,relationship)
+                if invalid_node ==  True:
+                    print("Invalid Node relationship in subclass:", node1_type, relationship, node2_type)
+                    print("====================")
+                    continue
+            
+            # check if a valid relationship exists in ontology for between these node types
+            with driver.session() as session:
+                #first check for the valid relationship between node1 and the relationship itself
+                edges = session.execute_read(check_valid_relationship, node1_type, relationship)
+                print("Check for: ", node1_type,relationship,node2_type)
+                if len(edges)==0: #if relationship doesnot exist then check for parent-child relationship of the node
+                    print("Relation Not Found.. Checking for subclasses")
+                    subclasses_nodes = session.execute_read(find_subclass, node1_type)
+                    #check if Parent or child has a valid relation 
+                    print(subclasses_nodes)
+                    if len(subclasses_nodes)>0:
+                        for node in subclasses_nodes:
+                            print("******", node['child'], node['parent'])
+                            sc_nodes = session.execute_read(check_valid_relationship,node['child'],relationship)
+                            for e in sc_nodes:
+                                # If valid connection is found the replace node with proper node
+                                print("^^^--",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
+                                node1_type = e["p"]["n4sch__name"]
+                            sc_nodes = session.execute_read(check_valid_relationship,node['parent'],relationship)
+                            for e in sc_nodes:
+                                print("--^^^",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
+                                node1_type = e["p"]["n4sch__name"]
+                        invalid_relation = False
+                    else:
+                        invalid_relation = True
+
+
+                edges = session.execute_read(check_valid_relationship,node2_type,relationship)
+                print("Check for: ", node1_type,relationship,node2_type)
+                if len(edges)==0: #if relationship doesnot exist then check for parent-child relationship of the node
+                    print("Relation Not Found.. Checking for subclasses")
+                    subclasses_nodes = session.execute_read(find_subclass, node2_type)
+                    #check if Parent or child has a valid relation 
+                    print(subclasses_nodes)
+                    if len(subclasses_nodes)>0:
+                        for node in subclasses_nodes:
+                            print("******", node['child'], node['parent'])
+                            sc_nodes = session.execute_read(check_valid_relationship,node['child'],relationship)
+                            for e in sc_nodes:
+                                # If valid connection is found the replace node with proper node
+                                print("^^^--",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
+                                node2_type = e["p"]["n4sch__name"]
+                            sc_nodes = session.execute_read(check_valid_relationship,node['parent'],relationship)
+                            for e in sc_nodes:
+                                print("--^^^",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
+                                node2_type = e["p"]["n4sch__name"]
+                        invalid_relation = False
+                    else:
+                        invalid_relation = True
+                # for e in edges:
+                #     print(e["p"]["n4sch__name"], e["o"]["n4sch__name"])
+                if invalid_relation == False:
+                    
+                    print(node1_type, node1_value, f"--[{relationship}]-->", node2_type, node2_value)
+                    print("====================")
+
 
 
 if __name__ == "__main__":
@@ -113,3 +285,10 @@ if __name__ == "__main__":
     with driver.session() as session:
         labels = session.execute_read(get_node_labels)
         print("Node Labels:", labels)
+    
+    with open("sample_response.json", "r") as file:
+        jsondata = json.load(file)
+    
+    make_correct_pairs(jsondata["Data"])
+
+        
