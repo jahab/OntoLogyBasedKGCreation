@@ -331,51 +331,54 @@ def merge_node(tx, labels, value):
         tx.run(query, value=value)
 
 def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, relationship):
-    # Convert labels to Cypher syntax
     def format_labels(label):
-        if isinstance(label, list):
-            return ":" + ":".join(label)
-        return f":{label}"
+        return ":" + ":".join(label) if isinstance(label, list) else f":{label}"
 
     node1_label_str = format_labels(node1_type)
     node2_label_str = format_labels(node2_type)
 
-    # Prepare node1 match conditions
+    # Build node1 match
+    node1_params = {}
     if isinstance(node1_value, dict):
         node1_match = " AND ".join(f"n1.{k} = ${k}1" for k in node1_value)
+        for k, v in node1_value.items():
+            node1_params[f"{k}1"] = v
     else:
-        node1_key = f"{node1_type[-1].lower()}Name" if isinstance(node1_type, list) else f"{node1_type.lower()}Name"
-        node1_match = f"n1.{node1_key} = $node1_value"
+        key = f"{node1_type[-1].lower()}Name" if isinstance(node1_type, list) else f"{node1_type.lower()}Name"
+        node1_match = f"n1.{key} = $node1_value"
+        node1_params["node1_value"] = node1_value
 
-    # Prepare node2 match conditions
+    # Build node2 match
+    node2_params = {}
     if isinstance(node2_value, dict):
         node2_match = " AND ".join(f"n2.{k} = ${k}2" for k in node2_value)
+        for k, v in node2_value.items():
+            node2_params[f"{k}2"] = v
     else:
-        node2_key = f"{node2_type[-1].lower()}Name" if isinstance(node2_type, list) else f"{node2_type.lower()}Name"
-        node2_match = f"n2.{node2_key} = $node2_value"
+        key = f"{node2_type[-1].lower()}Name" if isinstance(node2_type, list) else f"{node2_type.lower()}Name"
+        node2_match = f"n2.{key} = $node2_value"
+        node2_params["node2_value"] = node2_value
 
-    # Cypher query
+    # Combine WHERE clause safely
+    where_clauses = []
+    if node1_match:
+        where_clauses.append(node1_match)
+    if node2_match:
+        where_clauses.append(node2_match)
+
+    where_clause = " AND ".join(where_clauses)
+
     query = f"""
     MATCH (n1{node1_label_str}), (n2{node2_label_str})
-    WHERE {node1_match} AND {node2_match}
+    WHERE {where_clause}
     MERGE (n1)-[r:{relationship}]->(n2)
     """
-    print("Query:", query)
-    print("Params:", node1_type, node2_type, relationship)
 
-    # Build parameters for query
-    params = {}
-    if isinstance(node1_value, dict):
-        for k, v in node1_value.items():
-            params[f"{k}1"] = v
-    else:
-        params["node1_value"] = node1_value
+    # Merge all parameters
+    params = {**node1_params, **node2_params}
 
-    if isinstance(node2_value, dict):
-        for k, v in node2_value.items():
-            params[f"{k}2"] = v
-    else:
-        params["node2_value"] = node2_value
+    print("Query:\n", query)
+    print("Params:", params)
 
     tx.run(query, **params)
 
