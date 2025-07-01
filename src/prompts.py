@@ -3,7 +3,12 @@ You are an expert in legal knowledge graphs and ontology-based information extra
 
 I will provide you:
 1. A list of predefined ontology-based entity types and relationship types with descriptions
-2. A few legal text excerpts from which I want to extract structured graph data
+2. A legal text excerpts from which I want to extract structured graph data
+3. A metadata of this case in json which includes fields like case_id, case_name and court_name.
+4. A json which will depict what all entities have been already extracted which you can use as relevant information to do further extractions
+
+ 
+
 
 Your job is to:
 - Identify relevant entities (nodes) and relationships from the legal text **only using the ontology I provide**
@@ -13,76 +18,86 @@ Your job is to:
 - Output the triples in JSON format
 
 
+### Metadata
+{metadata}
+
+
+### Relevant Information
+Here is the already extrcated nodes and relationships from this graph.
+{relevant_info_graph}
+
+
+
 ### Ontology:
 Each row in the following table represents either a valid `is_a` hierarchy or a domain-range relationship.
 
 | Node1                                   | Relationship        | Node2                 | Comment                                                                                                             |
 |-----------------------------------------|---------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------|
 | Appellant                               | is_a                | Party                 | party who makes an appeal                                                                                           |
+| Defendant                               | is_a                | Party                 | a person sued in the court of law                                                                                   |
+| Respondent                              | is_a                | Party                 | party called upon to respond or answer a petition, a cliam or a appeal                                              |
+| Plaintiff                               | is_a                | Party                 | party who brings the suit in the court of law                                                                       |
+| Accussed                                | is_a                | Party                 | person against whom an allegation has been made that he has committed an offence, or who is charge with an offence  |
+| Petitioner                              | is_a                | Party                 | one who makes the petition                                                                                          |
 | District_Court                          | is_a                | Courts_for_Civil      | a term in judicial system in India in which a case is heard and judged by at least 2 judges                         |
+| Sub_Court                               | is_a                | Courts_for_Civil      | second lower court in hierarchy at District level for civil cases                                                   |
+| Munsif_Court                            | is_a                | Courts_for_Civil      | lowest court in heirarchy for civil ases at district level after Principal Junior Civil Court                       |
+| Courts_of_Smaller_Causes                | is_a                | Courts_for_Civil      | lowest court after City Civil Courts at metropolitan level for civil cases                                          |
+| City_Civil_Courts                       | is_a                | Courts_for_Civil      | lower court at metropolitan level after High Courts for civil cases                                                 |
+| Principal_Junior_Civil_Court            | is_a                | Courts_for_Civil      | third lower court in hierarchy at district level for civil cases                                                    |
 | Review_Jurisdiction                     | is_a                | Jurisdiction          | jurisdiction type is a review jurisdiction                                                                          |
-| Order                                   | is_a                | CourtDecision         | order given by the court                                                                                            |
-| Place                                   | is_a                | Location              | location name or place name                                                                                         |
+| Appellant_Jurisdiction                  | is_a                | Jurisdiction          | jurisdiction type is a appellant jurisdiction                                                                       |
+| Writ_Jurisdiction                       | is_a                | Jurisdiction          | jurisdiction type is a writ jurisdiction               |
+| Original_Jurisdiction                   | is_a                | Jurisdiction          | jurisdiction type is a original jurisdiction           |
+| Advisory_Jurisdiction                   | is_a                | Jurisdiction          | jurisdiction type is a advisory jurisdiction           |
 | Criminal                                | is_a                | CaseDomain            | case is a criminal case                                                                                             |
 | Individual                              | is_a                | Party_Type            | participants of the case are the individual persons                                                                 |
-| Defendant                               | is_a                | Party                 | a person sued in the court of law                                                                                   |
-| Judgement                               | is_a                | CourtDecision         | Judgement given by the judge                                                                                        |
-| Appellant_Jurisdiction                  | is_a                | Jurisdiction          | jurisdiction type is a appellant jurisdiction                                                                       |
-| Judicial_Magistrate_Court(Second_Class) | is_a                | Courts_for_Criminal   | lowest court after Judicial Magistrate Court (First Class) at distrcit level for criminal cases                     |
-| Special_Bench                           | is_a                | Bench                 | means the Bench constituted by or under the orders of the Chief Justice to hear a case or particular class of cases |
+| Organization                            | is_a                | Party_Type            | organization(s) involved as the participant in the case                                                             |
+| Person                                  | is_a                | Party_Type            | A person                                                                                                            |
+| State                                   | is_a                | Party_Type            | represents state name/location                                                                                      |
+| GovernmentOrganization                  | is_a                | Party_Type            | party involved (either on both sides or any one) is the government in the case                                      |
+| Group                                   | is_a                | Party_Type            | party of the case are the group of people on one side against another group of people or individual or state        |
 | IndianCourts                            | is_a                | Court                 |                                                                                                                     |
 | Solicitor                               | is_a                | Court_Official        | represents solicitor, learned counsel or laywer of the case                                                         |
+| LearnedCounsel                          | is_a                | Court_Official        | Learned counsel is a term of reference to the lawyers and advocates collectively in litigation                      |
+| Judge                                   | is_a                | Court_Official        | A judge is a public official appointed to decide cases in a court of law.                                           |
+| Lawyer                                  | is_a                | Court_Official        | Lawyer is a term of reference to the attroneys and advocates collectively in litigation                             |
 | Metropolitan_Magistrate_Courts          | is_a                | Courts_for_Criminal   | lowest court after Chief Metropolitan Court at metropolitan level for criminal cases                                |
 | Chief_Meterpolitan_Court                | is_a                | Courts_for_Criminal   | lower court at metropolitan level after Sessions Court for criminal cases                                           |
+| Judicial_Magistrate_Court(Second_Class) | is_a                | Courts_for_Criminal   | lowest court after Judicial Magistrate Court (First Class) at distrcit level for criminal cases                     |
+| Judicial_Magistrate_Court(First_Class)  | is_a                | Courts_for_Criminal   | second lower court at distrcit level after districit level Session Court for criminal cases                         |
+| Session_Court                           | is_a                | Courts_for_Criminal   | lower court at both distrcit and metropolitan level after High Courts specific for criminal cases                   |
+| Metropolitian_Courts                    | is_a                | IndianCourts          | court for population more than 10 lakh city                                                                         |
+| High_Court                              | is_a                | IndianCourts          | court at the state level                                                                                            |
+| Tribunal                                | is_a                | IndianCourts          | represents the special courts for special issues or disputes                                                        |
+| SupremeCourt                            | is_a                | IndianCourts          | highest court in the judicial system                   |
+| District_Court                          | is_a                | IndianCourts          | a term in judicial system in India in which a case is heard and judged by at least 2 judges |
 | ObiterDictum                            | is_a                | Paragraph             | additional obersvations, remarks, and opinions made by the judge that are not the part of the reason for the decision |
-| Respondent                              | is_a                | Party                 | party called upon to respond or answer a petition, a cliam or a appeal                                                |
-| Metropolitian_Courts                    | is_a                | IndianCourts          | court for population more than 10 lakh city            |
-| LearnedCounsel                          | is_a                | Court_Official        | Learned counsel is a term of reference to the lawyers and advocates collectively in litigation |
-| Fact                                    | is_a                | Paragraph             | represents factual statements in the case law          |
-| High_Court                              | is_a                | IndianCourts          | court at the state level                               |
-| Paragraph                               | is_a                | Structure             |                                                        |
-| Sub_Court                               | is_a                | Courts_for_Civil      | second lower court in hierarchy at District level for civil cases |
-| Tribunal                                | is_a                | IndianCourts          | represents the special courts for special issues or disputes |
-| Courts_for_Civil                        | is_a                | CaseDomain            | court for civil cases                                  |
-| State                                   | is_a                | Location              |           represents state name/location                         |
-| Division_Bench                          | is_a                | Bench                 | a term in judicial system in India in which a case is heard and judged by at least 2 judges |
-| Munsif_Court                            | is_a                | Courts_for_Civil      | lowest court in heirarchy for civil ases at district level after Principal Junior Civil Court |
-| Tribunal_Bench                          | is_a                | Bench                 | Bench deals with tribunals cases                       |
-| Concurrence                             | is_a                | Opinion               | decisions result when a judge agrees with the ultimate conclusion made by the majority of the court but disagrees on how they reached that decision |
-| Taluka                                  | is_a                | Location              | represents taluka name/location                        |
-| Majority                                | is_a                | Opinion               | Majority decisions are the ones where a majority of the judges agree |
-| Plaintiff                               | is_a                | Party                 | party who brings the suit in the court of law          |
-| Courts_of_Smaller_Causes                | is_a                | Courts_for_Civil      | lowest court after City Civil Courts at metropolitan level for civil cases |
-| Organization                            | is_a                | Party_Type            | organization(s) involved as the participant in the case |
-| City_Civil_Courts                       | is_a                | Courts_for_Civil      | lower court at metropolitan level after High Courts for civil cases |
-| Argument                                | is_a                | Paragraph             | Argument made by any of the party                      |
-| Issue                                   | is_a                | Paragraph             | issues in the case arised by the party                 |
-| Country                                 | is_a                | Location              | A country                                              |
-| Judicial_Magistrate_Court(First_Class)  | is_a                | Courts_for_Criminal   | second lower court at distrcit level after districit level Session Court for criminal cases |
-| Person                                  | is_a                | Party_Type            | A person                                               |
-| District                                | is_a                | Location              | represents district name/location                      |
-| Dissent                                 | is_a                | Opinion               | judges who do not agree with the majority of the Court |
-| Original_Jurisdiction                   | is_a                | Jurisdiction          | jurisdiction type is a original jurisdiction           |
-| Principal_Junior_Civil_Court            | is_a                | Courts_for_Civil      | third lower court in hierarchy at district level for civil cases |
-| Decree                                  | is_a                | CourtDecision         | formal order issued by the judges                      |
+| Fact                                    | is_a                | Paragraph             | represents factual statements in the case law                                                                       |
+| Opinion                                 | is_a                | Paragraph             |                                                        |
 | RatioDecidendi                          | is_a                | Paragraph             | the rationale for the decision                         |
+| Issue                                   | is_a                | Paragraph             | issues in the case arised by the party                 |
+| Argument                                | is_a                | Paragraph             | Argument made by any of the party                      |
+| Paragraph                               | is_a                | Structure             |                                                                                                                     |
+| Courts_for_Civil                        | is_a                | CaseDomain            | court for civil cases                                                                                               |
 | Civil                                   | is_a                | CaseDomain            | case is a civil case                                   |
 | Courts_for_Criminal                     | is_a                | CaseDomain            | courts for crimnial cases                              |
-| Session_Court                           | is_a                | Courts_for_Criminal   | lower court at both distrcit and metropolitan level after High Courts specific for criminal cases |
-| District_Court                          | is_a                | IndianCourts          | a term in judicial system in India in which a case is heard and judged by at least 2 judges |
-| Accussed                                | is_a                | Party                 | person against whom an allegation has been made that he has committed an offence, or who is charge with an offence |
-| Opinion                                 | is_a                | Paragraph             |                                                        |
-| State                                   | is_a                | Party_Type            | represents state name/location                         |
-| Single_Judge                            | is_a                | Bench                 | a case heard and judged by a single judge              |
-| SupremeCourt                            | is_a                | IndianCourts          | highest court in the judicial system                   |
-| Advisory_Jurisdiction                   | is_a                | Jurisdiction          | jurisdiction type is a advisory jurisdiction           |
-| Writ_Jurisdiction                       | is_a                | Jurisdiction          | jurisdiction type is a writ jurisdiction               |
-| GovernmentOrganization                  | is_a                | Party_Type            | party involved (either on both sides or any one) is the government in the case |
-| Judge                                   | is_a                | Court_Official        | A judge is a public official appointed to decide cases in a court of law. |
-| Group                                   | is_a                | Party_Type            | party of the case are the group of people on one side against another group of people or individual or state |
-| Larger_Bench                            | is_a                | Bench                 | a term in judicial system in India in which a case is heard and judged by three or five judges |
-| Lawyer                                  | is_a                | Court_Official        | Lawyer is a term of reference to the attroneys and advocates collectively in litigation |
-| Petitioner                              | is_a                | Party                 | one who makes the petition                             |
+| Division_Bench                          | is_a                | Bench                 | a term in judicial system in India in which a case is heard and judged by at least 2 judges                         |
+| Tribunal_Bench                          | is_a                | Bench                 | Bench deals with tribunals cases                                                                                    |
+| Larger_Bench                            | is_a                | Bench                 | a term in judicial system in India in which a case is heard and judged by three or five judges                      |
+| Special_Bench                           | is_a                | Bench                 | means the Bench constituted by or under the orders of the Chief Justice to hear a case or particular class of cases |
+| Single_Judge                            | is_a                | Bench                 | a case heard and judged by a single judge                                                                           |
+| Majority                                | is_a                | Opinion               | Majority decisions are the ones where a majority of the judges agree                                                |
+| Dissent                                 | is_a                | Opinion               | judges who do not agree with the majority of the Court                                                              |
+| Concurrence                             | is_a                | Opinion               | decisions result when a judge agrees with the ultimate conclusion made by the majority of the court but disagrees on how they reached that decision |
+| Taluka                                  | is_a                | Location              | represents taluka name/location                        |
+| Country                                 | is_a                | Location              | A country                                              |
+| District                                | is_a                | Location              | represents district name/location                      |
+| State                                   | is_a                | Location              |           represents state name/location                         |
+| Place                                   | is_a                | Location              | location name or place name                                                                                         |
+| Order                                   | is_a                | CourtDecision         | order given by the court                                                                                            |
+| Judgement                               | is_a                | CourtDecision         | Judgement given by the judge                                                                                        |
+| Decree                                  | is_a                | CourtDecision         | formal order issued by the judges                      |
 | Argument                                | appellantArgument   | Appellant             | party who makes an appeal                              |
 | Argument                                | defendentArgument   | Defendant             | a person sued in the court of law                      |
 | Argument                                | petitionerArgument  | Petitioner            | one who makes the petition                             |
@@ -262,4 +277,12 @@ return a well formatted json dict. Do not wrap your output in markdown or text f
 "node2_type": {node2_type}
 "node2_property" : {node2_property} # you are required to fill this up
 }}
+"""
+
+METADATA_EXTRACTION_PROMPT = """
+Extract the following information from the provided text and return it as a JSON object:
+
+- **case_id**: The case number.
+- **court_name**: The name of the court.
+- **case_name**: The names of the parties involved in the case.
 """

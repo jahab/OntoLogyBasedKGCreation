@@ -154,6 +154,31 @@ def load_ontology(driver):
 
 
 
+def create_constraint(driver):
+    def _create_constraint(tx):
+        query = """
+        CREATE CONSTRAINT courtcase_unique
+        FOR (n:CourtCase) REQUIRE (n.hasCaseID) IS UNIQUE
+        """
+        tx.run(query)
+    
+    def _check_contraint_exists(tx):
+        query = """
+        SHOW CONSTRAINTS YIELD name
+        WHERE name = 'courtcase_unique'
+        RETURN count(*) > 0 AS exists
+        """
+        return tx.run(query).single()["exists"]
+    
+    with driver.session() as session:
+        res = session.execute_read(_check_contraint_exists)    
+        if res:
+            print(f"{res}  Constraint already exists..")
+            return
+        else:
+            print("Creating Constraint on CourtCase with property hasCaseID..")
+            res = session.execute_write(_create_constraint)  
+
 def fetch_relationship_from_ontology(driver):
     allowed_relationships = []
     with driver.session() as session:
@@ -210,8 +235,15 @@ def check_valid_relationship(tx, node1, relationship, node2):
 
 
 def refine_parent_child_relation(driver, node1_type, node2_type, node1_val, node2_val, relationship):
+    """
+    function to handle is_a (is subclassof relation ship)
+    It was observed from LLM that some nodes with is_a relationsip were not getting correctly outputted.
+    The functions aims to find the appropriate parent and child for a given node
+    if the parent child relationship is incorrect then interchange them to correct order
+    Returns: node and relationship in correct order 
+    """
     # print("Relation Not Found.. Checking for subclasses")
-    print(node1_type, node2_type)
+    print(f"[{refine_parent_child_relation.__name__}]",node1_type, node2_type)
     invalid_node = True
     with driver.session() as session:
         subclasses_nodes = session.execute_read(find_subclass, node1_type) 
@@ -459,6 +491,87 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
                     
 
 
+
+
+def get_nodes_and_rels(tx):
+    query = """
+    MATCH p = (n)-[r]-(s)
+    WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Paragraph
+    AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT s:Paragraph
+    return n,r,s
+    """
+    return list(tx.run(query)) 
+
+
+def get_graph(driver):
+
+    with driver.session() as session:
+        result = session.execute_read(get_nodes_and_rels)
+
+    results= []
+    for record in result:
+        n = record["n"]
+        r = record["r"]
+        s = record["s"]
+
+        def format_node(node):
+            labels = ":".join(node.labels)
+            props = node._properties
+            return f"(:{labels} {props})"
+
+        rel = f"-[:{r.type}]->" if r.start_node.id == n.id else f"<-[:{r.type}]-"
+        results.append(f"{format_node(n)}{rel}{format_node(s)}")
+    return results
+
+
+
+
+def check_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
+    query= """
+    // Step 1: Find duplicates
+    MATCH (n:{})
+    WHERE n.{} = {}
+    WITH collect(n) AS nodes, head(collect(n)) AS main
+    """
+    query.format(node_type, prop_key, prop_val)    
+
+
+def merge_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
+    query= """
+    // Step 1: Find duplicates
+    MATCH (n:{})
+    WHERE n.{} = {}
+    WITH collect(n) AS nodes, head(collect(n)) AS main
+
+    // Step 2: Iterate over remaining nodes
+    UNWIND nodes AS n
+    WITH n, main
+    WHERE id(n) <> id(main)
+
+    // Step 3: Redirect incoming relationships
+    CALL {{
+    WITH n, main
+    MATCH (m)-[r]->(n)
+    CALL apoc.create.relationship(m, type(r), properties(r), main) YIELD rel
+    DELETE r
+    RETURN count(*) AS dummy1
+    }}
+
+    // Step 4: Redirect outgoing relationships
+    CALL {{
+    WITH n, main
+    MATCH (n)-[r]->(m)
+    CALL apoc.create.relationship(main, type(r), properties(r), m) YIELD rel
+    DELETE r
+    RETURN count(*) AS dummy2
+    }}
+
+    // Step 5: Merge properties if needed, delete duplicate
+    WITH n, main
+    SET main += n
+    DELETE n
+    """
+    query.format(node_type,prop_key, prop_val)
 
 
 if __name__ == "__main__":
