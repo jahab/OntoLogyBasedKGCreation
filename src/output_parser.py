@@ -1,6 +1,4 @@
-from typing import Dict
-from typing import Union
-from typing import List
+from typing import Dict, Union, List
 import json
 import traceback
 import re
@@ -10,16 +8,16 @@ from langchain.output_parsers import PydanticOutputParser
 
 class NodeDictParser(BaseModel):
     node1_type: str = Field(description="node1_type")
-    node1_property: dict = Field(description="you are required to fill this up by extracting from text")
+    node1_property: Dict[str,str] = Field(description="you are required to fill this up by extracting from text")
     relationship: str = Field(description="Relationship between the nodes")
     node2_type: str = Field(description="node2_type")
-    node2_property: dict = Field(description="you are required to fill this up")
+    node2_property: Dict[str,str] = Field(description="you are required to fill this up")
 
 
 class CaseMetadataParser(BaseModel):
-    case_id:str = Field(description = "This is Case number. For Example: Criminal Appeal No. 1392 of 2011/ Criminal Appeal Nos. 1864-1865 of 2010/ SLP(C) No. 000242 - 000284 / 2014 Registered on 24-11-2014/ CIVIL APPEAL NO. 17308 OF 2017")
-    court_name:str = Field(description = "Name of the Court. Example: Supreme Court of India/ High Court of Madhya Pradesh/ Disctrict Coutr of Udaipur")
-    case_name:str = Field(description= """
+    hasCaseID:str = Field(description = "This is Case number. For Example: Criminal Appeal No. 1392 of 2011/ Criminal Appeal Nos. 1864-1865 of 2010/ SLP(C) No. 000242 - 000284 / 2014 Registered on 24-11-2014/ CIVIL APPEAL NO. 17308 OF 2017")
+    hasCourtName:str = Field(description = "Name of the Court. Example: Supreme Court of India/ High Court of Madhya Pradesh/ Disctrict Coutr of Udaipur")
+    hasCaseName:str = Field(description= """
                           Name of the case. Each Example separated by a /: CHUNTHURAM v.
                                                     STATE OF CHHATTISGARH / 
                                                     Sajid Khan v. 

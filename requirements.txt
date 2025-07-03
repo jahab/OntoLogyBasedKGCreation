@@ -1,0 +1,6 @@
+langchain
+mem0
+langgraph 
+langchain-openai
+pandas
+ne04j

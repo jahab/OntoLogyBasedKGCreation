@@ -17,6 +17,10 @@ Your job is to:
 - Assign the proper properties to the nodes extracted based on the property table
 - Output the triples in JSON format
 
+Maintain Entity Consistency: When extracting entities, it's vital to ensure  consistency. If an entity, such as "John Doe", is mentioned multiple times in the text but is referred to by different names or pronouns (e.g., "Joe", "he"), always use the most complete identifier for that entity. The knowledge graph should be coherent and easily  understandable, so maintaining consistency in entity references is crucial.
+
+
+The case metadata is provided so that you ensure consistency in extraction of nodes.
 
 ### Metadata
 {metadata}
@@ -285,4 +289,7 @@ Extract the following information from the provided text and return it as a JSON
 - **case_id**: The case number.
 - **court_name**: The name of the court.
 - **case_name**: The names of the parties involved in the case.
+
+## Output Format 
+{format_instructions}
 """

@@ -342,25 +342,80 @@ def make_correct_pairs(jsondata):
                     print("====================")
 
 
+def get_constraints_for_label(tx, label):
+    query = """
+    SHOW CONSTRAINTS YIELD name, type, labelsOrTypes, properties
+    WHERE $label IN labelsOrTypes
+    RETURN properties
+    """
+    result = tx.run(query, label=label)
+    return [r["properties"] for r in result]  # List of lists
+
+
+
+def get_constraints_for_label(tx, label):
+    query = """
+    SHOW CONSTRAINTS YIELD name, type, labelsOrTypes, properties
+    WHERE $label IN labelsOrTypes
+    RETURN properties
+    """
+    result = tx.run(query, label=label)
+    return [r["properties"] for r in result]  # List of lists
+
+def get_single_node(tx, label):
+    query = """
+    MATCH (n:{}) RETURN n;
+    """
+    result = tx.run(query.format(label))
+    return [r["n"] for r in result]  # List of lists
+
 
 
 def merge_node(tx, labels, value):
-    # Handle labels as list or single string
-    if isinstance(labels, list):
-        label_str = ":" + ":".join(labels)
-    else:
-        label_str = f":{labels}"
+    # Handle single or multiple labels
+    label_str = ":" + ":".join(labels) if isinstance(labels, list) else f":{labels}"
+    label = labels[0] if isinstance(labels, list) else labels
 
-    if isinstance(value, dict):
+    # Step 1: Check for node key constraint
+    constrained_keys_list = get_constraints_for_label(tx, label)
+    print(constrained_keys_list)
+    if constrained_keys_list:
+        d = get_single_node(tx, label)
+        if d:
+            for key, val in d[0].items():
+                if val:
+                    constrained_keys_list[0].append(key)
+        print("------",constrained_keys_list)
+        constrained_keys_list[0] = list(set(constrained_keys_list[0]))
+    # constrained_keys_list = constrained_keys_list
+    # Step 2: Choose a constraint if available
+    constrained_keys = None
+    for keys in constrained_keys_list:
+        if all(k in value for k in keys):  # Only use if all keys are available in the data
+            constrained_keys = keys
+            break
+
+    print(constrained_keys)
+    if constrained_keys:
+        # Use only constraint keys in MERGE
+        merge_props = ", ".join(f"{k}: ${k}" for k in constrained_keys)
+        query = f"MERGE (n{label_str} {{ {merge_props} }})"
+
+        # Now SET all the other properties (excluding merge keys)
+        set_props = [k for k in value if k not in constrained_keys]
+        if set_props:
+            set_clause = ", ".join(f"n.{k} = ${k}" for k in set_props)
+            query += f"\nSET {set_clause}"
+
+        print(f"[{merge_node}] : using constraint keys: {constrained_keys}")
+        tx.run(query, **value)
+
+    else:
+        # No constraints — fallback to using all props
         props = ", ".join(f"{k}: ${k}" for k in value)
         query = f"MERGE (n{label_str} {{ {props} }})"
-        print("if: ", label_str, props, value)
+        print(f"[{merge_node}] : no constraints, merging on all props")
         tx.run(query, **value)
-    else:
-        key = "name"  # fallback generic key
-        query = f"MERGE (n{label_str} {{ {key}: $value }})"
-        print("else: ", label_str, value)
-        tx.run(query, value=value)
 
 def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, relationship):
     def format_labels(label):
@@ -416,7 +471,7 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
 
 
 def merged_node_with_label_and_prop(driver, node:str):
-    # find subclass and superclass
+    # find subclass and superclass  and properties for the given node
     print("Received_node",node)
     node_dict = {"properties":{}, "labels": [node]}
     parent_node = None
@@ -464,7 +519,7 @@ def merged_node_with_label_and_prop(driver, node:str):
 def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, node2_type,  node2_value):
     invalid_relation = False
     if relationship == "is_a":
-        # Check if the extracted node is a valid subclass or not
+        # Check if the extracted node is a valid subclass or not. If not then return with valid sublassing
         node1_type, node2_type, node1_value, node2_value,invalid_node = refine_parent_child_relation(driver, node1_type,node2_type,node1_value,node2_value,relationship)
         if invalid_node ==  True:
             print("Invalid Node relationship in subclass:", node1_type, relationship, node2_type)
@@ -473,7 +528,7 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
     node1_dict = merged_node_with_label_and_prop(driver, node1_type) # {'properties': {'COLastName': '', 'COFirstName': ''},'labels': ['Judge', 'Court_Official']}
     node2_dict = merged_node_with_label_and_prop(driver, node2_type)
     # check if a valid relationship exists in ontology for between these node types
-    print(node1_dict, "\n",node2_dict)
+    print("[some_func_v2]\n", node1_dict, "\n",node2_dict)
     for label_1 in node1_dict['labels']:
         for label_2 in node2_dict['labels']:
             with driver.session() as session:
@@ -535,43 +590,148 @@ def check_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
     """
     query.format(node_type, prop_key, prop_val)    
 
+def merge_duplicate_nodes(driver, node_type,prop_key, prop_val):
+    
+    def _merge_duplicate_nodes(tx):
+        query= """
+        // Step 1: Find duplicates
+        MATCH (n:{})
+        WHERE n.{} = {}
+        WITH collect(n) AS nodes, head(collect(n)) AS main
 
-def merge_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
-    query= """
-    // Step 1: Find duplicates
-    MATCH (n:{})
-    WHERE n.{} = {}
-    WITH collect(n) AS nodes, head(collect(n)) AS main
+        // Step 2: Iterate over remaining nodes
+        UNWIND nodes AS n
+        WITH n, main
+        WHERE id(n) <> id(main)
 
-    // Step 2: Iterate over remaining nodes
-    UNWIND nodes AS n
-    WITH n, main
-    WHERE id(n) <> id(main)
+        // Step 3: Redirect incoming relationships
+        CALL {{
+        WITH n, main
+        MATCH (m)-[r]->(n)
+        CALL apoc.create.relationship(m, type(r), properties(r), main) YIELD rel
+        DELETE r
+        RETURN count(*) AS dummy1
+        }}
 
-    // Step 3: Redirect incoming relationships
-    CALL {{
-    WITH n, main
-    MATCH (m)-[r]->(n)
-    CALL apoc.create.relationship(m, type(r), properties(r), main) YIELD rel
-    DELETE r
-    RETURN count(*) AS dummy1
-    }}
+        // Step 4: Redirect outgoing relationships
+        CALL {{
+        WITH n, main
+        MATCH (n)-[r]->(m)
+        CALL apoc.create.relationship(main, type(r), properties(r), m) YIELD rel
+        DELETE r
+        RETURN count(*) AS dummy2
+        }}
 
-    // Step 4: Redirect outgoing relationships
-    CALL {{
-    WITH n, main
-    MATCH (n)-[r]->(m)
-    CALL apoc.create.relationship(main, type(r), properties(r), m) YIELD rel
-    DELETE r
-    RETURN count(*) AS dummy2
-    }}
+        // Step 5: Merge properties if needed, delete duplicate
+        WITH n, main
+        SET main += n
+        DELETE n
+        """
+        query.format(node_type,prop_key, prop_val)
+    with driver.session() as session:
+        session.run(_merge_duplicate_nodes)
 
-    // Step 5: Merge properties if needed, delete duplicate
-    WITH n, main
-    SET main += n
-    DELETE n
+
+def create_vector_index_for_node(driver, node, node_index,embedding_dim):
+    def _create_vector_index_for_node(tx):
+        query = f"""
+        CREATE VECTOR INDEX {node_index} IF NOT EXISTS
+        FOR (q:{node})
+        ON q.embedding
+        OPTIONS {{
+            indexConfig: {{
+                `vector.dimensions`: {embedding_dim},
+                `vector.similarity_function`: 'cosine'
+            }} 
+        }}
+        """
+        tx.run(query)
+    with driver.session as session():
+        session.execute_write(_create_vector_index_for_node)
+
+def create_vector_indices(driver, embedding_dim):
+    query = """
+    CALL db.labels() YIELD label
+    RETURN label
+    ORDER BY label
     """
-    query.format(node_type,prop_key, prop_val)
+    with driver.session() as session:
+        result = session.run(query)
+        for record in result:
+            create_vector_index_for_node(driver, record["label"], record["label"]+"_index",embedding_dim)
+
+
+def get_node_property(driver, node:str)->dict:
+    return merged_node_with_label_and_prop(driver, node)["properties"]
+
+
+def create_node_embedding(driver,node_label:str, embedding_model, recreate_embedding:bool = False):
+    node_prop = list(get_node_property(driver, node_label).keys())
+    
+    embedding_node_property = "embedding"
+    def get_node_properties(tx, props):
+        if recreate_embedding:
+            fetch_query = (
+                f"MATCH (n:`{node_label}`) "
+                f"WHERE n.{embedding_node_property} IS NOT null "
+                "AND any(k in $props WHERE n[k] IS NOT null) "
+                f"RETURN elementId(n) AS id, " 
+                "reduce(str = '', k IN $props | "
+                "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
+                "THEN str + '\\n' + k + ':' + toString(n[k]) "
+                "ELSE str END) AS text "
+                )
+        else: 
+            fetch_query = (
+                f"MATCH (n:`{node_label}`) "
+                f"WHERE n.{embedding_node_property} IS null "
+                "AND any(k in $props WHERE n[k] IS NOT null) "
+                f"RETURN elementId(n) AS id, " 
+                "reduce(str = '', k IN $props | "
+                "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
+                "THEN str + '\\n' + k + ':' + toString(n[k]) "
+                "ELSE str END) AS text "
+                )
+            
+        return list(tx.run(fetch_query, props=props))
+
+    def update_text_embedding(tx, data):
+        query = (
+                    "UNWIND $data AS row "
+                    f"MATCH (n:`{node_label}`) "
+                    "WHERE elementId(n) = row.id "
+                    f"CALL db.create.setNodeVectorProperty(n, "
+                    f"'{embedding_node_property}', row.embedding) "
+                    "RETURN count(*)"
+                )
+        tx.run(query, data=data)
+
+
+    with driver.session() as session:
+        ds = session.execute_read(get_node_properties,node_prop)
+    text_embeddings = embedding_model.embed_documents([el["text"] for el in ds])
+    params = {
+                    "data": [
+                        {"id": el["id"], "embedding": embedding}
+                        for el, embedding in zip(ds, text_embeddings)
+                    ]
+                }
+
+    with driver.session() as session:
+        ds = session.execute_write(update_text_embedding, data = params["data"])
+
+
+def create_all_node_embeddings(driver, embedding_model):
+    query = """
+    CALL db.labels() YIELD label
+    RETURN label
+    ORDER BY label
+    """
+    with driver.session() as session:
+        result = session.run(query)
+        for record in result:
+            create_node_embedding(driver,record["label"], embedding_model)
+
 
 
 if __name__ == "__main__":
