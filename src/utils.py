@@ -646,7 +646,7 @@ def create_vector_index_for_node(driver, node, node_index,embedding_dim):
         }}
         """
         tx.run(query)
-    with driver.session as session():
+    with driver.session() as session:
         session.execute_write(_create_vector_index_for_node)
 
 def create_vector_indices(driver, embedding_dim):
@@ -662,11 +662,20 @@ def create_vector_indices(driver, embedding_dim):
 
 
 def get_node_property(driver, node:str)->dict:
-    return merged_node_with_label_and_prop(driver, node)["properties"]
-
+    query = f"""
+    MATCH (n:{node})
+    WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property
+    RETURN n as node, properties(n) as property LIMIt 1
+    """
+    with driver.session() as session:
+        prop = session.run(query).data()
+    return prop
 
 def create_node_embedding(driver,node_label:str, embedding_model, recreate_embedding:bool = False):
-    node_prop = list(get_node_property(driver, node_label).keys())
+    node_prop = get_node_property(driver, node_label)
+    if node_prop:
+        node_prop = list(node_prop[0]["node"].keys())
+    
     
     embedding_node_property = "embedding"
     def get_node_properties(tx, props):
