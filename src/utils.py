@@ -228,8 +228,12 @@ def check_valid_relationship(tx, node1, relationship, node2):
     If Flase tx.run will return empty list
     """
     query = """
-    MATCH (n1:n4sch__Class {n4sch__name: $node1})-[]-(r:n4sch__Relationship {n4sch__name:$relationship})-[]-(n2:n4sch__Class {n4sch__name:$node2})
-    RETURN n1,r,n2
+        MATCH (n1:n4sch__Class {n4sch__name: $node1})
+        MATCH (n2:n4sch__Class {n4sch__name: $node2})
+        MATCH (r:n4sch__Relationship {n4sch__name: $relationship})
+        MATCH (r)-[:n4sch__DOMAIN]->(n1)
+        MATCH (r)-[:n4sch__RANGE]->(n2)
+        RETURN n1, r, n2
     """
     return list(tx.run(query,node1 = node1,relationship=relationship, node2 = node2))
 
@@ -289,7 +293,7 @@ def make_correct_pairs(jsondata):
             with driver.session() as session:
                 #first check for the valid relationship between node1 and the relationship itself
                 edges = session.execute_read(check_valid_relationship, node1_type, relationship)
-                print("Check for: ", node1_type,relationship,node2_type)
+                print("Check for: ", node1_type, relationship, node2_type)
                 if len(edges)==0: #if relationship doesnot exist then check for parent-child relationship of the node
                     print("Relation Not Found.. Checking for subclasses")
                     subclasses_nodes = session.execute_read(find_subclass, node1_type)
@@ -684,7 +688,7 @@ def create_node_embedding(driver,node_label:str, embedding_model, recreate_embed
                 f"MATCH (n:`{node_label}`) "
                 f"WHERE n.{embedding_node_property} IS NOT null "
                 "AND any(k in $props WHERE n[k] IS NOT null) "
-                f"RETURN elementId(n) AS id, " 
+                f"RETURN elementId(n) AS id, n, " 
                 "reduce(str = '', k IN $props | "
                 "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
                 "THEN str + '\\n' + k + ':' + toString(n[k]) "
@@ -718,7 +722,7 @@ def create_node_embedding(driver,node_label:str, embedding_model, recreate_embed
 
     with driver.session() as session:
         ds = session.execute_read(get_node_properties,node_prop)
-    text_embeddings = embedding_model.embed_documents([el["text"] for el in ds])
+    text_embeddings = embedding_model.embed_documents(["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds])
     params = {
                     "data": [
                         {"id": el["id"], "embedding": embedding}
