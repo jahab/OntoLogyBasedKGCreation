@@ -293,3 +293,19 @@ Extract the following information from the provided text and return it as a JSON
 ## Output Format 
 {format_instructions}
 """
+
+
+REFINE_NODES_PROMPT = """
+You are given two nodes with their labels properties. Based on the nodes supplied your task is tell me if these two nodes can be merged or not.
+Answer yes only and only if you are super super confident.
+Answer in just `yes` or `no`. Do not add any extra/other information from your end otherwise my system will break.
+Node 1:
+{node1}
+
+Node2:
+{node2}
+
+## Examples
+
+
+"""

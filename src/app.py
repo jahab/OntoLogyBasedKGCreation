@@ -22,6 +22,7 @@ from neo4j import GraphDatabase
 import uuid
 import traceback
 from mem0 import MemoryClient
+from refine_nodes import *
 
 
 
@@ -91,12 +92,12 @@ if __name__ == "__main__":
         messages = [("system", METADATA_EXTRACTION_PROMPT),("user","{text}") ],
         partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
     )
-        
+    
     model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # model = ChatOpenAI(model="gpt-4.1")
     meta_extraction_chain = metadata_extract_template | model | case_metadata_parser
-    case_metadata = meta_extraction_chain.invoke({"text":text_chunks[0]})
-    print("===========Case metadata:", case_metadata)
+    # case_metadata = meta_extraction_chain.invoke({"text":text_chunks[0]})
+    # print("===========Case metadata:", case_metadata)
     
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
@@ -119,70 +120,81 @@ if __name__ == "__main__":
     context = ""
     previous_chunk_id = None
     nodes_and_rels = ""
-    for text_chunk in text_chunks[0:10]:
-        try:
-            # Generate Response
-            current_chunk_id = str(uuid.uuid4())
-            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": case_metadata})
-            # print(resp.content)
-            triples = KG_extraction_parser.parse(resp.content)
-            # print(triples)
-            print("=============================================================")
-            # jsondata.append(json.loads(triples)["Data"])
-            # Save Interaction
-            # save_interaction(mem0_user_id, text_chunk, resp.content)
-            context = triples
-            for item in context:
-                node1_type = item.node1_type
-                node2_type = item.node2_type
-                node1_value = item.node1_value
-                node2_value = item.node2_value
-                relationship = item.relationship
-                try:
-                    resp = some_func_v2(driver, prop_extraction_chain, node1_type, node1_value, relationship, node2_type,  node2_value)
-                    if resp:
-                        model_output = resp["model_output"]
-                        # print(model_output)
-                        with driver.session() as session:
-                            session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
-                            session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
-                            session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
-                except Exception as e:
-                    print(traceback.print_exc())
-                    print("----------------------------------------------------------------------------------")
-                    print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
-                    print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
-                    print("Relationship: ", model_output["relationship"])
-                    exit()                
+    # for text_chunk in text_chunks:
+    #     try:
+    #         # Generate Response
+    #         current_chunk_id = str(uuid.uuid4())
+    #         resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": case_metadata})
+    #         # print(resp.content)
+    #         triples = KG_extraction_parser.parse(resp.content)
+    #         # print(triples)
+    #         print("=============================================================")
+    #         # jsondata.append(json.loads(triples)["Data"])
+    #         # Save Interaction
+    #         # save_interaction(mem0_user_id, text_chunk, resp.content)
+    #         context = triples
+    #         for item in context:
+    #             node1_type = item.node1_type
+    #             node2_type = item.node2_type
+    #             node1_value = item.node1_value
+    #             node2_value = item.node2_value
+    #             relationship = item.relationship
+    #             try:
+    #                 resp = some_func_v2(driver, prop_extraction_chain, node1_type, node1_value, relationship, node2_type,  node2_value)
+    #                 if resp:
+    #                     model_output = resp["model_output"]
+    #                     # print(model_output)
+    #                     with driver.session() as session:
+    #                         session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
+    #                         session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
+    #                         session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
+    #             except Exception as e:
+    #                 print(traceback.print_exc())
+    #                 print("----------------------------------------------------------------------------------")
+    #                 print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
+    #                 print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
+    #                 print("Relationship: ", model_output["relationship"])              
                                 
             
-            with driver.session() as session:
-                session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":case_metadata["hasCaseName"], "hasCaseID":case_metadata["hasCaseID"]})
-                session.execute_write(merge_node, ["Paragraph"],{"text":text_chunk,"chunk_id":current_chunk_id})
-                session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":case_metadata["hasCaseName"], "hasCaseID":case_metadata["hasCaseID"]}, 
-                                                          ["Paragraph"], {"text":text_chunk,"chunk_id":current_chunk_id},
-                                                          "hasParagraph")
+    #         with driver.session() as session:
+    #             session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":case_metadata["hasCaseName"], "hasCaseID":case_metadata["hasCaseID"]})
+    #             session.execute_write(merge_node, ["Paragraph"],{"text":text_chunk,"chunk_id":current_chunk_id})
+    #             session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":case_metadata["hasCaseName"], "hasCaseID":case_metadata["hasCaseID"]}, 
+    #                                                       ["Paragraph"], {"text":text_chunk,"chunk_id":current_chunk_id},
+    #                                                       "hasParagraph")
                 
                 
-                if previous_chunk_id is not None:
-                    session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":previous_chunk_id}, 
-                                                            ["Paragraph"], {"chunk_id":current_chunk_id},
-                                                            "next")
+    #             if previous_chunk_id is not None:
+    #                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":previous_chunk_id}, 
+    #                                                         ["Paragraph"], {"chunk_id":current_chunk_id},
+    #                                                         "next")
                     
-                    session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
-                                                            ["Paragraph"], {"chunk_id":previous_chunk_id},
-                                                            "previous")
+    #                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
+    #                                                         ["Paragraph"], {"chunk_id":previous_chunk_id},
+    #                                                         "previous")
             
-            previous_chunk_id = current_chunk_id
-            nodes_and_rels = get_graph(driver)
-        except Exception as e:
-            print(traceback.print_exc())
+    #         previous_chunk_id = current_chunk_id
+    #         records = get_graph(driver)
+    #         nodes_and_rels  = []
+    #         for res in records:
+    #             if ":Paragraph" in res:
+    #                 continue
+    #             nodes_and_rels.append(res)
+    #     except Exception as e:
+    #         print(traceback.print_exc())
     
     
 
-    create_vector_indices(driver, 768)
-    embedding_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    create_all_node_embeddings(driver, embedding_model)
+    embedding_func = GoogleGenerativeAIEmbeddings
+    embedding_model = "models/text-embedding-004"
+    vector_db = VectorDB("http://localhost:6333",embedding_func,embedding_model)
+    vector_store = vector_db.create_collection("CourtCase")
+    # create_vector_indices(driver, 768)
+    # create_all_node_embeddings(driver, embedding_func,embedding_model, vector_store)
+    refine_nodes = RefineNodes(driver, vector_store, model)
+    refine_nodes.refine_nodes()
+    
+
 
     
     # embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")

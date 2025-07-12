@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from neo4j import GraphDatabase
 import json
-
+from vector_store import  *
 
 def get_node_labels(tx):
     result = tx.run("CALL db.labels()")
@@ -555,8 +555,8 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
 def get_nodes_and_rels(tx):
     query = """
     MATCH p = (n)-[r]-(s)
-    WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Paragraph
-    AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT s:Paragraph
+    WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
+    AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
     return n,r,s
     """
     return list(tx.run(query)) 
@@ -578,7 +578,7 @@ def get_graph(driver):
             props = node._properties
             return f"(:{labels} {props})"
 
-        rel = f"-[:{r.type}]->" if r.start_node.id == n.id else f"<-[:{r.type}]-"
+        rel = f"-[:{r.type}]->" if r.start_node.element_id == n.element_id else f"<-[:{r.type}]-"
         results.append(f"{format_node(n)}{rel}{format_node(s)}")
     return results
 
@@ -593,6 +593,7 @@ def check_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
     WITH collect(n) AS nodes, head(collect(n)) AS main
     """
     query.format(node_type, prop_key, prop_val)    
+
 
 def merge_duplicate_nodes(driver, node_type,prop_key, prop_val):
     
@@ -636,6 +637,72 @@ def merge_duplicate_nodes(driver, node_type,prop_key, prop_val):
         session.run(_merge_duplicate_nodes)
 
 
+def merge_by_id(driver, node_id1, node_id2):
+    try:
+        assert node_id1!=node_id2, "Both node ids are same"
+    except AssertionError as e:
+        return e
+    
+    def _match_node_labels(tx, node_id1, node_id2):
+        query = """
+            MATCH (n1) WHERE elementId(n1) = $node_id1
+            MATCH (n2) WHERE elementId(n2) = $node_id2
+            WITH n1, n2, labels(n1) = labels(n2) AS label_match
+            RETURN label_match
+            }
+        """
+        return list(tx.run(query, node_id1 = node_id1, node_id2=node_id2))
+        
+    def _merge_by_id(tx, node_id1, node_id2):
+        query = """
+                MATCH (n1) WHERE elementId(n1) = $node_id1
+                MATCH (n2) WHERE elementId(n2) = $node_id2
+                
+                // 🧠 Continue only if labels match
+                CALL (n1, n2) {
+                WITH n1, n2
+                // Merge properties from n2 to n1 only if n1[prop] is null or empty
+                UNWIND keys(n2) AS prop_key
+                WITH n1, n2, prop_key
+                WHERE n1[prop_key] IS NULL OR n1[prop_key] = ''
+                CALL apoc.create.setProperty(n1, prop_key, n2[prop_key]) YIELD node
+                RETURN count(*) AS props_merged
+                }
+
+                // 🔁 Rewire incoming relationships
+                CALL(n1, n2) {
+                WITH n1, n2
+                MATCH (x)-[r]->(n2)
+                CALL apoc.create.relationship(x, type(r), properties(r), n1) YIELD rel
+                DELETE r
+                RETURN count(*) AS in_relinked
+                }
+
+                // 🔁 Rewire outgoing relationships
+                CALL(n1, n2) {
+                WITH n1, n2
+                MATCH (n2)-[r]->(x)
+                CALL apoc.create.relationship(n1, type(r), properties(r), x) YIELD rel
+                DELETE r
+                RETURN count(*) AS out_relinked
+                }
+
+                // 🧹 Finally delete the duplicate
+                WITH n1, n2
+                DELETE n2
+                RETURN elementId(n1) AS kept_node
+        """
+        return list(tx.run(query, node_id1 = node_id1, node_id2=node_id2))
+
+    with driver.session() as session:
+        res = session.execute_read(_match_node_labels, node_id1 = node_id1, node_id2 = node_id2)
+    if res[0]["label_match"]:
+        with driver.session() as session:
+            session.execute_write(_merge_by_id, node_id1 = node_id1, node_id2 = node_id2)
+    else:
+        print("labels of nodes did not match!!")
+
+
 def create_vector_index_for_node(driver, node, node_index,embedding_dim):
     def _create_vector_index_for_node(tx):
         query = f"""
@@ -653,14 +720,18 @@ def create_vector_index_for_node(driver, node, node_index,embedding_dim):
     with driver.session() as session:
         session.execute_write(_create_vector_index_for_node)
 
-def create_vector_indices(driver, embedding_dim):
+def get_labels(tx):
     query = """
     CALL db.labels() YIELD label
     RETURN label
     ORDER BY label
     """
+    return list(tx.run(query))
+    
+
+def create_vector_indices(driver, embedding_dim):
     with driver.session() as session:
-        result = session.run(query)
+        result = session.execute_read(get_labels)
         for record in result:
             create_vector_index_for_node(driver, record["label"], record["label"]+"_index",embedding_dim)
 
@@ -675,18 +746,20 @@ def get_node_property(driver, node:str)->dict:
         prop = session.run(query).data()
     return prop
 
-def create_node_embedding(driver,node_label:str, embedding_model, recreate_embedding:bool = False):
-    node_prop = get_node_property(driver, node_label)
-    if node_prop:
-        node_prop = list(node_prop[0]["node"].keys())
+
+def create_node_embedding(driver,record, embedding_model, recreate_embedding:bool = False, vector_store:QdrantVectorStore=None):
     
-    
+    node_label = list(record.labels)[0]
+    node_prop = list(record.keys())
     embedding_node_property = "embedding"
+    if embedding_node_property in node_prop:
+        node_prop.remove(embedding_node_property)
     def get_node_properties(tx, props):
         if recreate_embedding:
             fetch_query = (
-                f"MATCH (n:`{node_label}`) "
-                f"WHERE n.{embedding_node_property} IS NOT null "
+                f"MATCH (n) "
+                f"WHERE elementId(n)='{record.element_id}' "
+                f"AND n.{embedding_node_property} IS NOT null "
                 "AND any(k in $props WHERE n[k] IS NOT null) "
                 f"RETURN elementId(n) AS id, n, " 
                 "reduce(str = '', k IN $props | "
@@ -696,10 +769,11 @@ def create_node_embedding(driver,node_label:str, embedding_model, recreate_embed
                 )
         else: 
             fetch_query = (
-                f"MATCH (n:`{node_label}`) "
-                f"WHERE n.{embedding_node_property} IS null "
+                f"MATCH (n) "
+                f"WHERE elementId(n)='{record.element_id}' "
+                f"AND n.{embedding_node_property} IS null "
                 "AND any(k in $props WHERE n[k] IS NOT null) "
-                f"RETURN elementId(n) AS id, " 
+                f"RETURN elementId(n) AS id, n, " 
                 "reduce(str = '', k IN $props | "
                 "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
                 "THEN str + '\\n' + k + ':' + toString(n[k]) "
@@ -722,28 +796,42 @@ def create_node_embedding(driver,node_label:str, embedding_model, recreate_embed
 
     with driver.session() as session:
         ds = session.execute_read(get_node_properties,node_prop)
-    text_embeddings = embedding_model.embed_documents(["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds])
-    params = {
-                    "data": [
-                        {"id": el["id"], "embedding": embedding}
-                        for el, embedding in zip(ds, text_embeddings)
-                    ]
-                }
+    print("=======", ds)
+    if not ds:
+        return
+    if vector_store is None: # If vector DB instance is not provided then use the default neo4j instance to store embeddings
+        text_embeddings = embedding_model.embed_documents(["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds])
+        params = {
+                        "data": [
+                            {"id": el["id"], "embedding": embedding}
+                            for el, embedding in zip(ds, text_embeddings)
+                        ]
+                    }
+        with driver.session() as session:
+            ds = session.execute_write(update_text_embedding, data = params["data"])
+        return
+    
+    
+    vector_store.add_texts(texts = ["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds], 
+                       metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
 
-    with driver.session() as session:
-        ds = session.execute_write(update_text_embedding, data = params["data"])
 
-
-def create_all_node_embeddings(driver, embedding_model):
+def create_all_node_embeddings(driver, embedding_func, embedding_model, vector_store):
     query = """
-    CALL db.labels() YIELD label
-    RETURN label
-    ORDER BY label
+        MATCH(n)-[r]-(m)
+        WHERE NOT labels(n) = ["Resource","n4sch__Class"] 
+        AND NOT labels(n) = ["Resource","n4sch__Relationship"] 
+        AND NOT labels(n) = ["Resource","n4sch__Property"]  
+        AND NOT labels(n) = ["Resource"] 
+        AND NOT labels(n) = ["_GraphConfig"] 
+        AND NOT labels(n) = ["_NsPrefDef"] 
+        RETURN DISTINCT(n)
     """
+    embedding_instance = embedding_func(model = embedding_model)
     with driver.session() as session:
         result = session.run(query)
         for record in result:
-            create_node_embedding(driver,record["label"], embedding_model)
+            create_node_embedding(driver,record["n"],embedding_instance, False, vector_store)
 
 
 

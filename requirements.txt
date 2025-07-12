@@ -4,3 +4,4 @@ langgraph
 langchain-openai
 pandas
 ne04j
+langchain-chroma>=0.1.2
