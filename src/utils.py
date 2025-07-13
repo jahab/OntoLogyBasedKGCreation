@@ -641,7 +641,7 @@ def merge_by_id(driver, node_id1, node_id2):
     try:
         assert node_id1!=node_id2, "Both node ids are same"
     except AssertionError as e:
-        return e
+        return False
     
     def _match_node_labels(tx, node_id1, node_id2):
         query = """
@@ -649,7 +649,6 @@ def merge_by_id(driver, node_id1, node_id2):
             MATCH (n2) WHERE elementId(n2) = $node_id2
             WITH n1, n2, labels(n1) = labels(n2) AS label_match
             RETURN label_match
-            }
         """
         return list(tx.run(query, node_id1 = node_id1, node_id2=node_id2))
         
@@ -699,8 +698,10 @@ def merge_by_id(driver, node_id1, node_id2):
     if res[0]["label_match"]:
         with driver.session() as session:
             session.execute_write(_merge_by_id, node_id1 = node_id1, node_id2 = node_id2)
+        return True
     else:
         print("labels of nodes did not match!!")
+        return False
 
 
 def create_vector_index_for_node(driver, node, node_index,embedding_dim):

@@ -1,6 +1,7 @@
 from utils import *
 from prompts import *
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from qdrant_client import models
 
 class RefineNodes:
     def __init__(self, driver, vector_store, model):
@@ -35,11 +36,23 @@ class RefineNodes:
         
         unique_nodes = list(unique_nodes)
         # for un in unique_nodes:
-        for i in range(len(unique_nodes)-1,-1,-1):
+        for i in range(len(unique_nodes)-1,-1,-1): # loop backwards as you are removing the elements dynamically from the list
             #search in vector DB but search what?
             # for every node search if similarity exists with other nodes
             # if similarity greater than thresh then call merge nodes
-            nodes = self.vector_store.similarity_search_with_score(f"{unique_nodes[i].labels} {unique_nodes[i].items()}", k=5)
+            nodes = self.vector_store.similarity_search_with_score(query = f"{unique_nodes[i].labels} {unique_nodes[i].items()}", 
+                                                                   k=5,
+                                                                   filter=models.Filter(
+                                                                    must_not=[
+                                                                        models.FieldCondition(
+                                                                            key="metadata.element_id",
+                                                                            match=models.MatchValue(
+                                                                                value =  unique_nodes[i].element_id
+                                                                            ),
+                                                                        ),
+                                                                    ]
+                                                                    ) 
+                                                                )
             for n in nodes:
                 score = n[1]
                 if score > self.threshold:
@@ -49,13 +62,14 @@ class RefineNodes:
                                                       "node2": f"{n[0].metadata} {n[0].page_content} " 
                                                       })
                     if "yes" in resp.content.lower():
-                        print("[MERGE NODES]",unique_nodes[i], n[0].page_content)
-                        user_input = input("get User input answer in y or n")
-                        if user_input.lower() == "y":
-                            merge_by_id(self.driver, unique_nodes[i].element_id, n[0].metadata["element_id"])
-                            element_id_to_remove = n[0].metadata["element_id"]
-                            self.vector_store.delete(ids = [n[0].metadata["_id"]])
-                            unique_nodes.remove()
+                        print("[MERGE NODES]","\nNode1:", unique_nodes[i], "\n\nNode2:",n[0])
+                        user_input = input("get User input answer in y or n: ")
+                        if "y" in user_input.lower():
+                            ret_val = merge_by_id(self.driver, unique_nodes[i].element_id, n[0].metadata["element_id"])
+                            if ret_val:
+                                element_id_to_remove = n[0].metadata["element_id"]
+                                self.vector_store.delete(ids = [n[0].metadata["_id"]])
+                                del unique_nodes[i]
                     
                     
             
