@@ -838,7 +838,7 @@ def create_all_node_embeddings(driver, embedding_func, embedding_model, vector_s
 
 if __name__ == "__main__":
     
-    uri = "bolt://localhost:7687"
+    uri = "bolt://neo4j:7687"
     username = "neo4j"
     password = "admin@123"
 

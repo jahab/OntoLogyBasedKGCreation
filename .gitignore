@@ -1,2 +1,5 @@
 *.env
 *__pycache__*
+neo4j/
+qdrant_storage/
+.vscode

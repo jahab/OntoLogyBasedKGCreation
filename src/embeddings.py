@@ -5,7 +5,7 @@ from qdrant_client.http.models import Distance, VectorParams
 
 
 
-client = QdrantClient("http://localhost:6333")
+client = QdrantClient("http://vector_db:6333")
 embedding_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
 EMBEDDING_PARAM = 768
 client.create_collection(

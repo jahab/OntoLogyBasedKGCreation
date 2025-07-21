@@ -22,50 +22,51 @@ from output_parser import *
 from neo4j import GraphDatabase
 import uuid
 import traceback
-from mem0 import MemoryClient
+# from mem0 import MemoryClient
 from refine_nodes import *
 
 
 
-def retrieve_context(query: str, user_id: str) -> List[Dict]:
-    """Retrieve relevant context from Mem0"""
-    memories = mem0.search(query, user_id=user_id)
-    seralized_memories = ' '.join([mem["memory"] for mem in memories])
-    context = [
-        { 
-            "content": f"Relevant information: {seralized_memories}"
-        },
-        {
-            "role": "user",
-            "content": query
-        }
-    ]
-    return context
+# def retrieve_context(query: str, user_id: str) -> List[Dict]:
+#     """Retrieve relevant context from Mem0"""
+#     memories = mem0.search(query, user_id=user_id)
+#     seralized_memories = ' '.join([mem["memory"] for mem in memories])
+#     context = [
+#         { 
+#             "content": f"Relevant information: {seralized_memories}"
+#         },
+#         {
+#             "role": "user",
+#             "content": query
+#         }
+#     ]
+#     return context
 
-def save_interaction(user_id: str, user_input: str, assistant_response: str):
-    """Save the interaction to Mem0"""
-    interaction = [
-        {
-          "role": "user",
-          "content": user_input
-        },
-        {
-            "role": "assistant",
-            "content": assistant_response
-        }
-    ]
-    mem0.add(interaction, user_id=user_id)
+# def save_interaction(user_id: str, user_input: str, assistant_response: str):
+#     """Save the interaction to Mem0"""
+#     interaction = [
+#         {
+#           "role": "user",
+#           "content": user_input
+#         },
+#         {
+#             "role": "assistant",
+#             "content": assistant_response
+#         }
+#     ]
+#     mem0.add(interaction, user_id=user_id)
 
 
 if __name__ == "__main__":
     load_dotenv()
-    uri = "bolt://localhost:7687"
-    username = "neo4j"
-    password = "admin@123"
+    uri = "bolt://neo4j:7687"
+    vector_db_uri = "http://vector_db:6333"
+    os.environ["NEO4j_USER_NAME"] = os.getenv("NEO4j_USER_NAME")
+    os.environ["NEO4j_PWD"] = os.getenv("NEO4j_PWD")
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
     os.environ["MEM0_API_KEY"] = os.getenv("MEM0_API_KEY")
     os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
-    driver = GraphDatabase.driver(uri, auth=(username, password))
+    driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
     #import ontology
     load_ontology(driver)
 
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     create_constraint(driver)
     
     #read the Document
-    file_path = ("/mnt/c/Users/jafarhabshee/Downloads/Judgementsq/Judgements/Cases/35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf")
+    file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf")
     loader = PyPDFLoader(file_path)
     pages = []
     text = ""
@@ -97,8 +98,8 @@ if __name__ == "__main__":
     model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # model = ChatOpenAI(model="gpt-4.1")
     meta_extraction_chain = metadata_extract_template | model | case_metadata_parser
-    # case_metadata = meta_extraction_chain.invoke({"text":text_chunks[0]})
-    # print("===========Case metadata:", case_metadata)
+    case_metadata = meta_extraction_chain.invoke({"text":text_chunks[0]})
+    print("===========Case metadata:", case_metadata)
     
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
@@ -188,7 +189,7 @@ if __name__ == "__main__":
 
     embedding_func = GoogleGenerativeAIEmbeddings
     embedding_model = "models/text-embedding-004"
-    vector_db = VectorDB("http://localhost:6333",embedding_func,embedding_model)
+    vector_db = VectorDB(vector_db_uri,embedding_func,embedding_model)
     vector_store = vector_db.create_collection("CourtCase")
     # create_vector_indices(driver, 768)
     # create_all_node_embeddings(driver, embedding_func,embedding_model, vector_store)
