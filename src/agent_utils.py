@@ -183,11 +183,12 @@ def extract_nodes_rels(state:KGBuilderState, runtime: Runtime[KGBuilderContext])
 
 
 def refine_nodes(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
-    pass
+    refine_nodes = RefineNodes(runtime.context["neo4j_driver"], runtime.context["vector_store"], runtime.context["extraction_model"])
+    refine_nodes.refine_nodes()
 
 
 def generate_embeddings(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
-    pass
+    create_all_node_embeddings(runtime.context["neo4j_driver"], runtime.context["embedding_model"], runtime.context["vector_store"])
 
 
 def read_document_ag(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
