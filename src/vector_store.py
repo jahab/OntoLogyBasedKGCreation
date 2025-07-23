@@ -5,9 +5,9 @@ from qdrant_client.http.models import Distance, VectorParams
 
 EMBEDDING_PARAM = 768
 class VectorDB:
-    def __init__(self, client_url, embedding_func, embedding_model):
+    def __init__(self, client_url, embedding_model):
         self.client = QdrantClient(client_url)
-        self.embedding_model = embedding_func(model=embedding_model)
+        self.embedding_model = embedding_model
     
     def create_collection(self, coll_name)->QdrantVectorStore:
         if not self.client.collection_exists(coll_name):

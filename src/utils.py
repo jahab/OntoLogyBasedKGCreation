@@ -1,8 +1,16 @@
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.docstore.document import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+
 import pandas as pd
 import os
 from neo4j import GraphDatabase
 import json
 from vector_store import  *
+from prompts import *
+from output_parser import *
 
 def get_node_labels(tx):
     result = tx.run("CALL db.labels()")
@@ -817,7 +825,7 @@ def create_node_embedding(driver,record, embedding_model, recreate_embedding:boo
                        metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
 
 
-def create_all_node_embeddings(driver, embedding_func, embedding_model, vector_store):
+def create_all_node_embeddings(driver, embedding_model, vector_store):
     query = """
         MATCH(n)-[r]-(m)
         WHERE NOT labels(n) = ["Resource","n4sch__Class"] 
@@ -828,12 +836,50 @@ def create_all_node_embeddings(driver, embedding_func, embedding_model, vector_s
         AND NOT labels(n) = ["_NsPrefDef"] 
         RETURN DISTINCT(n)
     """
-    embedding_instance = embedding_func(model = embedding_model)
     with driver.session() as session:
         result = session.run(query)
         for record in result:
-            create_node_embedding(driver,record["n"],embedding_instance, False, vector_store)
+            create_node_embedding(driver,record["n"],embedding_model, False, vector_store)
 
+
+
+def read_document(file_path:str):
+    """
+    Call to read a pdf and extract text as string from this pdf and return this text.
+    """
+    loader = PyPDFLoader(file_path)
+    pages = []
+    text = ""
+
+    for page in loader.lazy_load():
+        pages.append(page)
+        text = text+"\n"+page.page_content    
+    # doc =  Document(page_content=text, metadata={"source": "local"})
+    return text
+
+def chunk_pdf(doc:str)->list:
+    """
+    Call to split a whole body of text in multiple chunks with overlap and return a list.
+    """
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=20)
+    text_chunks = text_splitter.split_text(doc)
+    return text_chunks
+
+def read_chunk(text_chunks):
+    for chunk in text_chunks:
+        yield chunk
+        
+
+def extract_case_metadata(model,chunk)->Dict:
+    case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
+    metadata_extract_template = ChatPromptTemplate(
+        messages = [("system", METADATA_EXTRACTION_PROMPT),("user","{text}") ],
+        partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
+    )
+    
+    meta_extraction_chain = metadata_extract_template | model | case_metadata_parser
+    case_metadata = meta_extraction_chain.invoke({"text":chunk})
+    return case_metadata
 
 
 if __name__ == "__main__":
