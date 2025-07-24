@@ -7,7 +7,8 @@ from langgraph.types import interrupt, Command
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
-from langgraph.runtime import Runtime
+# from langgraph.runtime import Runtime
+from langchain_core.runnables import RunnableConfig
 
 from typing import Annotated
 from typing_extensions import TypedDict
@@ -63,12 +64,11 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
         return Command(goto="cancel")
 
 
-def extract_case_metadata_ag(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
-    case_metadata = extract_case_metadata(runtime.context["extraction_model"], state["chunk"])
+def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
+    case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
     return {"case_metadata":case_metadata}
 
 def init_context():
-    
     load_dotenv()
     uri = "bolt://neo4j:7687"
     vector_db_uri = "http://vector_db:6333"
@@ -78,14 +78,15 @@ def init_context():
     os.environ["MEM0_API_KEY"] = os.getenv("MEM0_API_KEY")
     os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
     
-    driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
-    vector_db = VectorDB(vector_db_uri,embedding_instance)
-    vector_store = vector_db.create_collection("CourtCase")
-    
     embedding_func = GoogleGenerativeAIEmbeddings
     embedding_model = "models/text-embedding-004"
     embedding_instance = embedding_func(model = embedding_model)
     extraction_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+    
+    driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
+    vector_db = VectorDB(vector_db_uri,embedding_instance)
+    vector_store = vector_db.create_collection("CourtCase")
+    
     # extraction_model = ChatOpenAI(model="gpt-4.1")
     
     
@@ -115,13 +116,14 @@ def init_context():
             }
 
 
-def extract_nodes_rels(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
+def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
+    nodes_and_rels = ""
     try:
         # Generate Response
         current_chunk_id = str(uuid.uuid4())
-        resp = state["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
+        resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
         # print(resp.content)
-        triples = state["KG_extraction_parser"].parse(resp.content)
+        triples = config["configurable"]["context"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)
         print("=============================================================")
         # jsondata.append(json.loads(triples)["Data"])
@@ -135,7 +137,7 @@ def extract_nodes_rels(state:KGBuilderState, runtime: Runtime[KGBuilderContext])
             node2_value = item.node2_value
             relationship = item.relationship
             try:
-                resp = some_func_v2(runtime.context["neo4j_driver"], runtime.context["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
+                resp = some_func_v2(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
                 if resp:
                     model_output = resp["model_output"]
                     # print(model_output)
@@ -169,7 +171,7 @@ def extract_nodes_rels(state:KGBuilderState, runtime: Runtime[KGBuilderContext])
                                                         "previous")
         
         previous_chunk_id = current_chunk_id
-        records = get_graph(runtime.context["neo4j_driver"])
+        records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
         for res in records:
             if ":Paragraph" in res:
@@ -182,30 +184,30 @@ def extract_nodes_rels(state:KGBuilderState, runtime: Runtime[KGBuilderContext])
 
 
 
-def refine_nodes(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
-    refine_nodes = RefineNodes(runtime.context["neo4j_driver"], runtime.context["vector_store"], runtime.context["extraction_model"])
+def refine_nodes(state:KGBuilderState, config: RunnableConfig):
+    refine_nodes = RefineNodes(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["vector_store"], config["configurable"]["context"]["extraction_model"])
     refine_nodes.refine_nodes()
 
 
-def generate_embeddings(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
-    create_all_node_embeddings(runtime.context["neo4j_driver"], runtime.context["embedding_model"], runtime.context["vector_store"])
+def generate_embeddings(state:KGBuilderState, config: RunnableConfig):
+    create_all_node_embeddings(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["embedding_model"], config["configurable"]["context"]["vector_store"])
 
 
-def read_document_ag(state:KGBuilderState, runtime: Runtime[KGBuilderContext]):
+def read_document_ag(state:KGBuilderState, config: RunnableConfig):
     """
     Call to read a pdf and extract text as string from this pdf and return this text.
     """
     return {"full_text":read_document(state["doc_path"])}
 
 
-def chunk_pdf_ag(state:KGBuilderState, runtime: Runtime[KGBuilderContext])->Dict:
+def chunk_pdf_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     """
     Call to split a whole body of text in multiple chunks with overlap and return a list.
     """
     text_chunks = chunk_pdf(state["full_text"])
     return {"text_chunks":text_chunks, "chunk_counter":0, "num_chunks":len(text_chunks)}
 
-def read_chunk_ag(state:KGBuilderState, runtime: Runtime[KGBuilderContext])->Dict:
+def read_chunk_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     """
     yield next chunk.
     """

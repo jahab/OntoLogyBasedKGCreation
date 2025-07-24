@@ -36,19 +36,18 @@ import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
 
+context = init_context()
+load_ontology(context["neo4j_driver"])
+#create_constraint
+create_constraint(context["neo4j_driver"])
 
-
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-
+# llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 tools = ToolNode([read_document,chunk_pdf])
-
-llm = llm.bind_tools([tools])
-# Nodes
-
-
+# llm = llm.bind_tools([tools])
+# # Nodes
 
 # Build workflow
-workflow = StateGraph(state_schema = KGBuilderState, context_schema=KGBuilderContext)
+workflow = StateGraph(state_schema = KGBuilderState)
 workflow.add_node("tools_node",tools)
 # workflow.add_node("human_node", human_node)
 workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
@@ -71,6 +70,5 @@ workflow.add_edge("refine_nodes", END)
 graph = workflow.compile()
 
 
-context = init_context()
-config = RunnableConfig(recursion_limit=300)
-graph.invoke(input = {"doc_path":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf"}, config = config, context=context)
+config = RunnableConfig(recursion_limit=300, **context)
+graph.invoke(input = {"doc_path":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf"}, config = {"context":config})
