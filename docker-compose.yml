@@ -30,15 +30,15 @@ services:
       - "6334:6334"
     volumes:
       - $PWD/qdrant_storage:/qdrant/storage:z
-  # kg_app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: KG_app
-  #   depends_on:
-  #     - neo4j
-  #     - vector_db
-  #     - mongodb
+  kg_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: KG_app
+    depends_on:
+      - neo4j
+      - vector_db
+      - mongodb
   
   db-service:
     build:
@@ -51,8 +51,6 @@ services:
       - mongodb
     environment:
       - FLASK_ENV=development
-    # networks:
-    #   - app-network
 
   mongodb:
     image: mongo:6.0
@@ -61,11 +59,11 @@ services:
       - "27017:27017"
     volumes:
       - $PWD/mongo-data:/data/db
-    # networks:
-    #   - app-network
 
-# volumes:
-#   mongo-data:
-
-# networks:
-#   app-network:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8501:8501"

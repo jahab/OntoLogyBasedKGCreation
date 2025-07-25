@@ -13,7 +13,7 @@ myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mydb = myclient["db"]
 mycol = mydb["users"]
 
-@app.route('/', methods=['GET'])
+@app.route('/ping', methods=['GET'])
 def ping():
     return jsonify({'ping': 'pong'})
 

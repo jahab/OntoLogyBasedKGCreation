@@ -1,0 +1,3 @@
+streamlit==1.47.0
+streamlit-agraph==0.0.45
+extra-streamlit-components==0.1.80
