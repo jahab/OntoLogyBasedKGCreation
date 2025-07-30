@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the app
-ENTRYPOINT ["python", "db.py"]
+ENTRYPOINT ["python", "login.py"]

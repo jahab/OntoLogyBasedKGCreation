@@ -842,7 +842,6 @@ def create_all_node_embeddings(driver, embedding_model, vector_store):
             create_node_embedding(driver,record["n"],embedding_model, False, vector_store)
 
 
-
 def read_document(file_path:str):
     """
     Call to read a pdf and extract text as string from this pdf and return this text.

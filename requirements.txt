@@ -17,3 +17,6 @@ langchain-text-splitters==0.3.8
 langgraph==0.5.4
 google-genai==1.27.0
 qdrant-client==1.14.3
+celery==5.5.3
+redis==6.2.0
+flask

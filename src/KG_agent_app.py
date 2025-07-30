@@ -21,22 +21,22 @@ import uuid
 import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
-
+from tasks import *
 
 # creating a Flask app
 app = Flask(__name__)
 
 
-@app.route('/', methods = ['GET'])
+@app.route('/ping', methods = ['GET'])
 def ping():
     return jsonify({'ping': 'pong'})
 
 
-@app.route('/create_graph/<guid>', methods = ['GET'])
+@app.route('/create_graph', methods = ['POST'])
 def create_graph():
-    data = request.params
+    data = request.json
     context = init_context()
-    load_ontology(context["neo4j_driver"], guid)
+    load_ontology(context["neo4j_driver"])
     #create_constraint
     create_constraint(context["neo4j_driver"])
 
@@ -68,4 +68,10 @@ def create_graph():
     workflow.add_edge("refine_nodes", END)
     graph = workflow.compile()
     config = RunnableConfig(recursion_limit=300, **context)
-    return jsonify({'status': 0})
+    task = invoke_graph.delay(graph)
+    # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
+    return jsonify({'status': task.id})
+
+# driver function
+if __name__ == '__main__':
+    app.run(debug = True, host = "localhost", port = 4044)

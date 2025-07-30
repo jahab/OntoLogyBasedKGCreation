@@ -1,14 +1,13 @@
-version: "3.8"
 services:
   neo4j:
     build:
-      context: .
+      context: ./database
       dockerfile: Dockerfile.neo4j
     container_name: neo4j
     volumes:
-      - $PWD/neo4j/logs:/logs
-      - $PWD/neo4j/config:/config
-      - $PWD/neo4j/data:/data
+      - $PWD/neo4j-data/logs:/logs
+      - $PWD/neo4j-data/config:/config
+      - $PWD/neo4j-data/data:/data
       # - $PWD/neo4j/plugins:/plugins
       # - /$HOME/neo4j/import:/var/lib/neo4j/import
     environment:
@@ -22,6 +21,7 @@ services:
       - "7474:7474"
       - "7687:7687"
     restart: always
+
   vector_db:
     image: qdrant/qdrant
     container_name: qdrant
@@ -30,27 +30,39 @@ services:
       - "6334:6334"
     volumes:
       - $PWD/qdrant_storage:/qdrant/storage:z
+
   kg_app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: KG_app
+    ports:
+      - "4044:4044"
     depends_on:
       - neo4j
       - vector_db
       - mongodb
-  
-  db-service:
+    volumes:
+      - $PWD/user-data:/data/
+
+  login-service:
     build:
-      context: ./database
+      context: ./login
       dockerfile: Dockerfile
-    container_name: db-app
+    container_name: login-app
     ports:
       - "5000:5000"
     depends_on:
       - mongodb
     environment:
       - FLASK_ENV=development
+    volumes:
+      - $PWD/user-data:/data/
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
 
   mongodb:
     image: mongo:6.0

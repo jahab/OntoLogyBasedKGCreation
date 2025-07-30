@@ -1,14 +1,18 @@
 # ---------- 1) Imports ----------
+import os
 import streamlit as st
 import requests
 import extra_streamlit_components as stx
 from streamlit_agraph import agraph, Node, Edge, Config
 
+UPLOAD_DIR = "/data/"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # ---------- 2) Page Config (Only once, at top) ----------
 st.set_page_config(page_title="Legal Graph Builder", layout="wide")
 
 # ---------- 3) Backend base URL ----------
-BACKEND = "http://db-service:5000"
+BACKEND = "http://login-service:5000"
 
 # ---------- 4) Helpers ----------
 def login(username, password):
@@ -89,6 +93,11 @@ else:
 
         st.header("📄 Upload Document")
         uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
+        if uploaded_file is not None:
+            save_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+        with open(save_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.success(f"File saved at: {save_path}")
 
         st.header("🤖 Choose LLM")
         llm_choice = st.selectbox("Select a language model", ["GPT-4", "Claude 3", "LLaMA 3", "Gemini", "Custom"])
@@ -96,6 +105,7 @@ else:
         if st.button("🚀 Create Graph"):
             if uploaded_file:
                 st.success(f"Creating graph from **{uploaded_file.name}** using **{llm_choice}**")
+                requests.post("http://kg_app:4044/create_graph",json={"pdf_file":uploaded_file.name})
             else:
                 st.warning("Upload a PDF to begin.")
 
