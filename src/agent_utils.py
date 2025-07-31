@@ -9,6 +9,8 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 # from langgraph.runtime import Runtime
 from langchain_core.runnables import RunnableConfig
+from langgraph.config import get_stream_writer
+
 
 from typing import Annotated
 from typing_extensions import TypedDict
@@ -24,7 +26,7 @@ import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
 from vector_store import *
-
+from global_import import *
 
 class KGBuilderState(TypedDict):
     doc_path: str
@@ -66,9 +68,22 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
 
 def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
+    writer = get_stream_writer() 
+    writer({"data": "Case Metdata Extracted", "type": "progress"}) 
     return {"case_metadata":case_metadata}
 
-def init_context():
+def get_models(provider: str, embedding_model: str, chat_model: str):
+    provider = provider.lower()
+    try:
+        embedding_instance = EMBEDDING_MAP[provider](embedding_model)
+        chat_instance = CHAT_MODEL_MAP[provider](chat_model)
+        return embedding_instance, chat_instance
+    except KeyError:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+
+def init_context(data):
+    
     load_dotenv()
     uri = "bolt://neo4j:7687"
     vector_db_uri = "http://vector_db:6333"
@@ -78,16 +93,17 @@ def init_context():
     os.environ["MEM0_API_KEY"] = os.getenv("MEM0_API_KEY")
     os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
     
-    embedding_func = GoogleGenerativeAIEmbeddings
-    embedding_model = "models/text-embedding-004"
-    embedding_instance = embedding_func(model = embedding_model)
-    extraction_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+    # embedding_func = GoogleGenerativeAIEmbeddings
+    # embedding_model = "models/text-embedding-004"
+    # embedding_instance = embedding_func(model = embedding_model)
+    # extraction_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+    # extraction_model = ChatOpenAI(model="gpt-4.1")
+    
+    embedding_instance, extraction_model = get_models(data["provider"], data["embedding_model"], data["chat_model"])
     
     driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
     vector_store = vector_db.create_collection("CourtCase")
-    
-    # extraction_model = ChatOpenAI(model="gpt-4.1")
     
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
@@ -104,6 +120,8 @@ def init_context():
     )
     prop_extraction_chain = prop_extract_template | extraction_model | prop_extraction_parser
     KG_extraction_chain = prompt_template | extraction_model
+    writer = get_stream_writer()
+    writer({"data": "Initialised Context", "type": "progress"}) 
     return {"extraction_model":extraction_model,
             "embedding_model":embedding_instance, 
             "vector_store":vector_store, 
@@ -118,8 +136,10 @@ def init_context():
 
 def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
     nodes_and_rels = ""
+    writer = get_stream_writer()
     try:
         # Generate Response
+        writer({"data": "Extracting Node and rels", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
         resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
         # print(resp.content)
@@ -177,6 +197,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
             if ":Paragraph" in res:
                 continue
             nodes_and_rels.append(res)
+        writer({"data": "Node and rels Extracted", "type": "progress"}) 
     except Exception as e:
         print(traceback.print_exc())
     return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
@@ -190,8 +211,10 @@ def refine_nodes(state:KGBuilderState, config: RunnableConfig):
 
 
 def generate_embeddings(state:KGBuilderState, config: RunnableConfig):
+    writer = get_stream_writer()
+    writer({"data": "Generateing Embeddings", "type": "progress"}) 
     create_all_node_embeddings(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["embedding_model"], config["configurable"]["context"]["vector_store"])
-
+    writer({"data": "Embeddings Generated", "type": "progress"}) 
 
 def read_document_ag(state:KGBuilderState, config: RunnableConfig):
     """
