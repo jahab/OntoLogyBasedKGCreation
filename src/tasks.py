@@ -86,10 +86,14 @@ def create_invoke_graph(self, data):
     workflow.add_edge("refine_nodes", END)
     graph = workflow.compile()
     config = RunnableConfig(recursion_limit=300, **context)
-    graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
+    # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
   
     for chunk in graph.stream({"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config},stream_mode="custom"):
         print(chunk)
+        self.update_state(
+            state="PROGRESS",
+            meta={"update":chunk}
+        )
     
     # total = 10
     # for step in range(1, total + 1):

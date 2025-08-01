@@ -38,6 +38,8 @@ class KGBuilderState(TypedDict):
     chunk: str
     previous_chunk_id: str | None
     nodes_and_rels: List
+    num_chunks : int
+    chunk_counter : int
     
 class KGBuilderContext(TypedDict):
     neo4j_driver:Any
@@ -99,7 +101,7 @@ def init_context(data):
     # extraction_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # extraction_model = ChatOpenAI(model="gpt-4.1")
     
-    embedding_instance, extraction_model = get_models(data["provider"], data["embedding_model"], data["chat_model"])
+    embedding_instance, extraction_model = get_models(data["provider"], data["embedding_model"], data["extraction_model"])
     
     driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
@@ -120,8 +122,7 @@ def init_context(data):
     )
     prop_extraction_chain = prop_extract_template | extraction_model | prop_extraction_parser
     KG_extraction_chain = prompt_template | extraction_model
-    writer = get_stream_writer()
-    writer({"data": "Initialised Context", "type": "progress"}) 
+    
     return {"extraction_model":extraction_model,
             "embedding_model":embedding_instance, 
             "vector_store":vector_store, 
@@ -136,6 +137,7 @@ def init_context(data):
 
 def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
     nodes_and_rels = ""
+    previous_chunk_id = ""
     writer = get_stream_writer()
     try:
         # Generate Response
@@ -161,7 +163,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 if resp:
                     model_output = resp["model_output"]
                     # print(model_output)
-                    with state["neo4j_driver"].session() as session:
+                    with config["configurable"]["context"]["neo4j_driver"].session() as session:
                         session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                         session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                         session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
@@ -173,7 +175,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 print("Relationship: ", model_output["relationship"])              
                             
         
-        with state["neo4j_driver"].session() as session:
+        with config["configurable"]["context"]["neo4j_driver"].session() as session:
             session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["case_metadata"]["hasCaseName"], "hasCaseID":state["case_metadata"]["hasCaseID"]})
             session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
             session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["case_metadata"]["hasCaseName"], "hasCaseID":state["case_metadata"]["hasCaseID"]}, 
@@ -197,12 +199,10 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
             if ":Paragraph" in res:
                 continue
             nodes_and_rels.append(res)
-        writer({"data": "Node and rels Extracted", "type": "progress"}) 
+        writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
         print(traceback.print_exc())
     return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
-
-
 
 
 def refine_nodes(state:KGBuilderState, config: RunnableConfig):
@@ -234,8 +234,10 @@ def read_chunk_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     """
     yield next chunk.
     """
+    writer = get_stream_writer()
+    writer({"data": f"Reading chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     
-    print(state.get("chunk_counter",0))
+    print("chunk_counter:",state.get("chunk_counter",0))
 
     if state.get("case_metadata",None) == None:    
         chunk = state["text_chunks"][state.get("chunk_counter",0)]

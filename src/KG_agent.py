@@ -35,8 +35,13 @@ import uuid
 import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
-
-context = init_context()
+data = {
+    "pdf_file":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf",
+    "provider":"google",
+    "embedding_model":"models/text-embedding-004",
+    "extraction_model":"gemini-2.5-flash"
+}
+context = init_context(data)
 load_ontology(context["neo4j_driver"])
 #create_constraint
 create_constraint(context["neo4j_driver"])

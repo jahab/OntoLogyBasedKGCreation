@@ -31,7 +31,7 @@ app = Flask(__name__)
 
 @app.route('/ping', methods = ['GET'])
 def ping():
-    return jsonify({'ping': 'pong'})
+    return jsonify({'ping': 'KG_agent_pong'})
 
 
 @app.route('/create_graph', methods = ['POST'])

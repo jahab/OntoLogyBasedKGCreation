@@ -1,5 +1,5 @@
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.openAI import ChatOpenAI
+from  langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.chat_models import  ChatAnthropic
 import enum

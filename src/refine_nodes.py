@@ -2,7 +2,7 @@ from utils import *
 from prompts import *
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from qdrant_client import models
-
+from broker import *
 class RefineNodes:
     def __init__(self, driver, vector_store, model):
         self.driver = driver
@@ -22,7 +22,7 @@ class RefineNodes:
         return [node for node in node_list if node.element_id != id_to_remove]
 
     
-    def refine_nodes(self):
+    def refine_nodes(self, task_id:str|None):
         # use the calculated embeddings
         # using the embeddings identify the nodes that can be merged
         # should yu use GPT to ask if the nodes can be merged? Or ask user?
@@ -37,9 +37,9 @@ class RefineNodes:
         unique_nodes = list(unique_nodes)
         # for un in unique_nodes:
         for i in range(len(unique_nodes)-1,-1,-1): # loop backwards as you are removing the elements dynamically from the list
-            #search in vector DB but search what?
-            # for every node search if similarity exists with other nodes
-            # if similarity greater than thresh then call merge nodes
+            # search in vector DB but search what?
+            # for every unique node search in vectorDB if similarity exists with other nodes
+            # if similarity greater than a threshold then call merge nodes
             nodes = self.vector_store.similarity_search_with_score(query = f"{unique_nodes[i].labels} {unique_nodes[i].items()}", 
                                                                    k=5,
                                                                    filter=models.Filter(
@@ -62,15 +62,21 @@ class RefineNodes:
                                                       "node2": f"{n[0].metadata} {n[0].page_content} " 
                                                       })
                     if "yes" in resp.content.lower():
-                        print("[MERGE NODES]","\nNode1:", unique_nodes[i], "\n\nNode2:",n[0])
-                        user_input = input("get User input answer in y or n: ")
-                        if "y" in user_input.lower():
+                        if task_id is None:
+                            user_input = input(f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0]}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nYour answer:")
+                        else:
+                            user_input = ask(task_id, f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0]}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nYour answer:")
+                        if "1" in user_input.lower():
                             ret_val = merge_by_id(self.driver, unique_nodes[i].element_id, n[0].metadata["element_id"])
                             if ret_val:
-                                element_id_to_remove = n[0].metadata["element_id"]
                                 self.vector_store.delete(ids = [n[0].metadata["_id"]])
                                 del unique_nodes[i]
-                    
+                        # elif "2" in user_input.lower(): # TODO: FIXME: delete the node from the vector DB properly
+                        #     ret_val = merge_by_id(self.driver, n[0].metadata["element_id"], unique_nodes[i].element_id)
+                        #     if ret_val:
+                        #         self.vector_store.delete(ids = [n[0].metadata["_id"]])
+                        #         del unique_nodes[i]
+                            
                     
             
             
