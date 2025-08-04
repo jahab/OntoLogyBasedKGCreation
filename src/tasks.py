@@ -18,27 +18,6 @@ celery = Celery(
 )
 
 
-# @celery.task(bind=True)
-# def ask_user(self, data:dict=None):
-#     total = 10
-#     for step in range(1, total + 1):
-#         # dummy work
-#         import time; time.sleep(2)
-
-#         # every 3rd step we ask something
-#         if step % 3 == 0:
-#             colour = ask(self.request.id, f"Step {step}: favourite colour?")
-#             print("Got colour:", colour)
-
-#         # progress update
-#         self.update_state(
-#             state="PROGRESS",
-#             meta={"current": step, "total": total}
-#         )
-
-#     return {"status": "finished", "result": 42}
-
-
 @celery.task(bind=True)
 def create_invoke_graph(self, data):
     """
@@ -77,14 +56,12 @@ def create_invoke_graph(self, data):
     workflow.add_node("refine_nodes",refine_nodes)
 
     workflow.add_edge(START, "read_document")
-    # workflow.add_edge("read_document","chunk_pdf")
-    # workflow.add_edge("chunk_pdf","read_chunk")
-    # workflow.add_conditional_edges("read_chunk",  lambda state: state.get("next"),{"extract_case_metadata": "extract_case_metadata", "extract_nodes_rels": "extract_nodes_rels", "generate_embeddings":"generate_embeddings" })
-    # workflow.add_edge("extract_case_metadata","extract_nodes_rels")
-    # workflow.add_edge("extract_nodes_rels","read_chunk")
-    # workflow.add_edge("generate_embeddings","refine_nodes")
-    
-    workflow.add_edge("read_document","refine_nodes")
+    workflow.add_edge("read_document","chunk_pdf")
+    workflow.add_edge("chunk_pdf","read_chunk")
+    workflow.add_conditional_edges("read_chunk",  lambda state: state.get("next"),{"extract_case_metadata": "extract_case_metadata", "extract_nodes_rels": "extract_nodes_rels", "generate_embeddings":"generate_embeddings" })
+    workflow.add_edge("extract_case_metadata","extract_nodes_rels")
+    workflow.add_edge("extract_nodes_rels","read_chunk")
+    workflow.add_edge("generate_embeddings","refine_nodes")
     workflow.add_edge("refine_nodes", END)
     graph = workflow.compile()
     config = RunnableConfig(recursion_limit=300, **context)
