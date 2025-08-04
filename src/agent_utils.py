@@ -132,7 +132,8 @@ def init_context(data):
             "KG_extraction_parser":KG_extraction_parser, 
             "KG_extraction_chain":KG_extraction_chain, 
             "prop_extraction_chain":prop_extraction_chain, 
-            "prop_extraction_parser":prop_extraction_parser
+            "prop_extraction_parser":prop_extraction_parser,
+            "username":data["username"]
             }
 
 
@@ -182,14 +183,15 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
                                                         "hasParagraph")
             
-            
+            print("======previous_chunk_id", state.get("previous_chunk_id",None))
             if state.get("previous_chunk_id",None) is not None:
-                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":previous_chunk_id}, 
+                print("================Connecting the chunk=================")
+                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
                                                         ["Paragraph"], {"chunk_id":current_chunk_id},
                                                         "next")
                 
                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
-                                                        ["Paragraph"], {"chunk_id":previous_chunk_id},
+                                                        ["Paragraph"], {"chunk_id": state.get("previous_chunk_id")},
                                                         "previous")
         
         previous_chunk_id = current_chunk_id
@@ -202,7 +204,8 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
         print(traceback.print_exc())
-    return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":""}
+        previous_chunk_id = ""
+    return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
 
 
 def refine_nodes(state:KGBuilderState, config: RunnableConfig):

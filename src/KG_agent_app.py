@@ -22,7 +22,7 @@ import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
 from tasks import *
-from broker import *
+from broker import current_question, answer
 from global_import import *
 
 # creating a Flask app
@@ -73,6 +73,7 @@ def create_graph():
     # config = RunnableConfig(recursion_limit=300, **context)
     # task = invoke_graph.delay(graph)
     # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
+    data["username"] = "test_user"
     task = create_invoke_graph.delay(data)
     user_collection = mongo_db["users"]
     user_collection.update_one({"username": "test_user"}, {"$set": {"task_id":task.id}})
@@ -102,7 +103,8 @@ def prompt():
     data = request.json
     task_id = data["task_id"]
     q = current_question(task_id)
-    return jsonify(question=q) if q else ("", 204)
+    print(q)
+    return jsonify(question=q) if q else jsonify({"message":"no questions in q"})
 
 @app.route("/answer", methods=["POST"])
 def answer_route():

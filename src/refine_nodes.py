@@ -2,7 +2,7 @@ from utils import *
 from prompts import *
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from qdrant_client import models
-from broker import *
+from broker import ask
 class RefineNodes:
     def __init__(self, driver, vector_db_cli, vector_store, coll_name, model):
         self.driver = driver
@@ -63,17 +63,21 @@ class RefineNodes:
                     resp = refine_nodes_chain.invoke({"node1": f"{unique_nodes[i].labels} {unique_nodes[i].items()}",
                                                       "node2": f"{n[0].metadata} {n[0].page_content} " 
                                                       })
+                    print("[refine Nodes]: ",resp)
                     if "yes" in resp.content.lower():
+                        print(task_id)
                         if task_id is None:
-                            user_input = input(f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0]}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nYour answer:")
+                            print("comes in if=======")
+                            user_input = input(f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0]}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nDiscard: Press 3\nYour answer:")
                         else:
-                            user_input = ask(task_id, f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0]}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nYour answer:")
+                            print("comes in else=======")
+                            user_input = ask(task_id, f"[MERGE NODES]\n\nNode1: {unique_nodes[0]} \n\nNode2: {n[0].page_content}\n\nPlease Select option\nMerge Node1 into Node2: press 1\nMerge Node2 into Node1: press 2\nDiscard: Press 3\nYour answer:")
                         if "1" in user_input.lower():
                             ret_val = merge_by_id(self.driver, unique_nodes[i].element_id, n[0].metadata["element_id"])
                             if ret_val:
                                 self.vector_store.delete(ids = [n[0].metadata["_id"]])
                                 del unique_nodes[i]
-                        elif "2" in user_input.lower(): # TODO: FIXME: delete the node from the vector DB properly
+                        elif "2" in user_input.lower(): # TODO: FIXME: delete the node from the vector DB properly->Done but neess testing
                             ret_val = merge_by_id(self.driver, n[0].metadata["element_id"], unique_nodes[i].element_id)
                             if ret_val:
                                 self.vector_store.delete(ids = [n[0].metadata["_id"]])
@@ -87,7 +91,8 @@ class RefineNodes:
                                         )
                                     )
                                 del unique_nodes[i]
-                            
+                        elif "3" in user_input.lower():
+                            pass
                     
             
             
