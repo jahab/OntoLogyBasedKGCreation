@@ -4,11 +4,13 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from qdrant_client import models
 from broker import *
 class RefineNodes:
-    def __init__(self, driver, vector_store, model):
+    def __init__(self, driver, vector_db_cli, vector_store, coll_name, model):
         self.driver = driver
         self.vector_store = vector_store
         self.threshold = 0.6
         self.model = model
+        self.vector_db_cli = vector_db_cli
+        self.collection_name = coll_name
         self.create_prompt_template()
 
     def create_prompt_template(self):
@@ -71,11 +73,20 @@ class RefineNodes:
                             if ret_val:
                                 self.vector_store.delete(ids = [n[0].metadata["_id"]])
                                 del unique_nodes[i]
-                        # elif "2" in user_input.lower(): # TODO: FIXME: delete the node from the vector DB properly
-                        #     ret_val = merge_by_id(self.driver, n[0].metadata["element_id"], unique_nodes[i].element_id)
-                        #     if ret_val:
-                        #         self.vector_store.delete(ids = [n[0].metadata["_id"]])
-                        #         del unique_nodes[i]
+                        elif "2" in user_input.lower(): # TODO: FIXME: delete the node from the vector DB properly
+                            ret_val = merge_by_id(self.driver, n[0].metadata["element_id"], unique_nodes[i].element_id)
+                            if ret_val:
+                                self.vector_store.delete(ids = [n[0].metadata["_id"]])
+                                self.vector_db_cli.delete(points=models.Filter(
+                                    must=[
+                                        models.FieldCondition(
+                                                key="metadata.element_id", 
+                                                match=models.MatchValue(value=unique_nodes[i].element_id)
+                                                )
+                                            ]
+                                        )
+                                    )
+                                del unique_nodes[i]
                             
                     
             

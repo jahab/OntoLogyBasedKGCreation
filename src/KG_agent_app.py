@@ -16,7 +16,6 @@ from utils import *
 from agent_utils import *
 import os
 from output_parser import *
-
 from neo4j import GraphDatabase
 import uuid
 import traceback
@@ -24,6 +23,7 @@ import traceback
 from refine_nodes import *
 from tasks import *
 from broker import *
+from global_import import *
 
 # creating a Flask app
 app = Flask(__name__)
@@ -74,15 +74,18 @@ def create_graph():
     # task = invoke_graph.delay(graph)
     # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
     task = create_invoke_graph.delay(data)
-    
+    user_collection = mongo_db["users"]
+    user_collection.update_one({"username": "test_user"}, {"$set": {"task_id":task.id}})
     # r = redis.Redis(host="redis", port=6379, db=1)
     # r.setex(f"task_owner:{task.id}", 7200, user_id)
 
     return jsonify(task_id=task.id), 202
 
 
-@app.route("/status/<task_id>")
-def status(task_id):
+@app.route("/status",  methods = ['POST'])
+def status():
+    data = request.json
+    task_id = data["task_id"]
     task = create_invoke_graph.AsyncResult(task_id)
     if task.state == "PENDING":
         resp = {"state": "PENDING"}
@@ -94,13 +97,17 @@ def status(task_id):
         resp = {"state": task.state, "error": str(task.info)}
     return jsonify(resp)
 
-@app.route("/prompt/<task_id>")
-def prompt(task_id):
+@app.route("/prompt",methods = ['POST'])
+def prompt():
+    data = request.json
+    task_id = data["task_id"]
     q = current_question(task_id)
     return jsonify(question=q) if q else ("", 204)
 
-@app.route("/answer/<task_id>", methods=["POST"])
-def answer_route(task_id):
+@app.route("/answer", methods=["POST"])
+def answer_route():
+    data = request.json
+    task_id = data["task_id"]
     answer(task_id, request.json["value"])
     return "", 204
 

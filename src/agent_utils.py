@@ -126,7 +126,8 @@ def init_context(data):
     return {"extraction_model":extraction_model,
             "embedding_model":embedding_instance, 
             "vector_store":vector_store, 
-            "vector_db":vector_db,
+            "vector_db_cli":vector_db,
+            "vector_db_collection_name":"CourtCase",
             "neo4j_driver":driver,
             "KG_extraction_parser":KG_extraction_parser, 
             "KG_extraction_chain":KG_extraction_chain, 
@@ -137,11 +138,10 @@ def init_context(data):
 
 def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
     nodes_and_rels = ""
-    previous_chunk_id = ""
     writer = get_stream_writer()
     try:
         # Generate Response
-        writer({"data": "Extracting Node and rels", "type": "progress"}) 
+        writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
         resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
         # print(resp.content)
@@ -202,12 +202,18 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
         print(traceback.print_exc())
-    return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
+    return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":""}
 
 
 def refine_nodes(state:KGBuilderState, config: RunnableConfig):
-    refine_nodes = RefineNodes(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["vector_store"], config["configurable"]["context"]["extraction_model"])
-    refine_nodes.refine_nodes()
+    refine_nodes = RefineNodes(config["configurable"]["context"]["neo4j_driver"],
+                               config["configurable"]["context"]["vector_db_cli"], 
+                               config["configurable"]["context"]["vector_store"],
+                               config["configurable"]["context"]["vector_db_collection_name"],
+                               config["configurable"]["context"]["extraction_model"])
+    user_collection = mongo_db["users"]
+    user_details = user_collection.find_one({"username": config["configurable"]["context"]["username"]})
+    refine_nodes.refine_nodes(task_id = user_details["task_id"])
 
 
 def generate_embeddings(state:KGBuilderState, config: RunnableConfig):

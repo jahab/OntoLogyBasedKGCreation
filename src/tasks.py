@@ -94,22 +94,6 @@ def create_invoke_graph(self, data):
             state="PROGRESS",
             meta={"update":chunk}
         )
-    
-    # total = 10
-    # for step in range(1, total + 1):
-    #     # dummy work
-    #     import time; time.sleep(2)
-
-    #     # every 3rd step we ask something
-    #     if step % 3 == 0:
-    #         colour = ask(self.request.id, f"Step {step}: favourite colour?")
-    #         print("Got colour:", colour)
-
-    #     # progress update
-    #     self.update_state(
-    #         state="PROGRESS",
-    #         meta={"current": step, "total": total}
-    #     )
 
     return {"status": "finished", "result": 42}
 

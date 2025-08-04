@@ -79,4 +79,9 @@ def forgetpwd():
     return make_response(jsonify({'message': 'Password updated successfully'}), 200)
 
 if __name__ == '__main__':
+    user_data = {
+        "username": "test_user",
+        "password": "test_password"  # In production: hash this!
+    }
+    mycol.insert_one(user_data)
     app.run(debug=True, host='0.0.0.0', port=5000)
