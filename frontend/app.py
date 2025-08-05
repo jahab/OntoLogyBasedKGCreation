@@ -53,6 +53,7 @@ if token is None:
         res = login(username, password)
         if res.status_code == 200:
             token = res.json().get("token")
+            print("=================", token)
             cookie_manager.set("jwt", token)
             st.session_state.jwt_token = token
             st.success("Logged in successfully!")
@@ -88,6 +89,7 @@ else:
     with st.sidebar:
         st.header("👤 Logged in")
         if st.button("Logout"):
+            print(cookie_manager)
             cookie_manager.delete("jwt")
             st.rerun()
 
@@ -95,9 +97,9 @@ else:
         uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
         if uploaded_file is not None:
             save_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-        with open(save_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"File saved at: {save_path}")
+            with open(save_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            st.success(f"File saved at: {save_path}")
 
         st.header("🤖 Choose LLM")
         llm_choice = st.selectbox("Select a language model", ["GPT-4", "Claude 3", "LLaMA 3", "Gemini", "Custom"])

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, make_response
 import pymongo
 import jwt
 import datetime
+import traceback
 
 SECRET_KEY = "this_is_my_db"  # TODO: FIXME: use env in production
 
@@ -13,30 +14,36 @@ myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mydb = myclient["db"]
 mycol = mydb["users"]
 
+try:
+    mycol.create_index([('username', 1)], unique=True)
+except Exception as e:
+    pass
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({'ping': 'pong'})
+    return jsonify({'ping': 'pong from login service'})
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    data = request.json
+    try:
+        data = request.json
 
-    if not data or "username" not in data or "password" not in data:
-        return make_response(jsonify({'error': 'Username and password required'}), 400)
+        if not data or "username" not in data or "password" not in data:
+            return make_response(jsonify({'error': 'Username and password required'}), 400)
 
-    existing_user = mycol.find_one({"username": data["username"]})
-    if existing_user:
-        return make_response(jsonify({'error': 'Username already exists'}), 409)
+        existing_user = mycol.find_one({"username": data["username"]})
+        if existing_user:
+            return make_response(jsonify({'error': 'Username already exists'}), 409)
 
-    user_data = {
-        "username": data["username"],
-        "password": data["password"]  # In production: hash this!
-    }
+        user_data = {
+            "username": data["username"],
+            "password": data["password"]  # In production: hash this!
+        }
 
-    mycol.insert_one(user_data)
+        mycol.insert_one(user_data)
 
-    return make_response(jsonify({'message': 'User registered successfully'}), 201)
-
+        return make_response(jsonify({'message': 'User registered successfully'}), 201)
+    except Exception as e:
+        return make_response(jsonify({'error': f"sercer error: {traceback.format_exc()}"}), 400)
 
 
 @app.route('/signin', methods=['POST'])
@@ -83,5 +90,8 @@ if __name__ == '__main__':
         "username": "test_user",
         "password": "test_password"  # In production: hash this!
     }
-    mycol.insert_one(user_data)
+    try:
+        mycol.insert_one(user_data)
+    except Exception as e:
+        print("User already exists")
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -79,3 +79,6 @@ services:
     container_name: frontend
     ports:
       - "8501:8501"
+      - "8502:8502"
+    volumes:
+      - $PWD/user-data:/data/

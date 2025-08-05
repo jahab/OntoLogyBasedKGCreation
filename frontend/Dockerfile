@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the app
-ENTRYPOINT ["streamlit", "run", "app.py"]
+ENTRYPOINT ["streamlit", "run", "app.py", "--browser.gatherUsageStats","false"]
