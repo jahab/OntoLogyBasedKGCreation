@@ -170,13 +170,14 @@ else:
 
         col1, col2 = st.columns([1, 5])
         with col2:
-            question = st.text_input("", placeholder="Ask something about the graph...", key="question_input")
+            question = st.text_input("Ask Something", placeholder="Ask something about the graph...", key="question_input", label_visibility="collapsed")
             send = st.button("⬆️", help="Send", use_container_width=True)
 
     if send and question.strip():
         st.info(f"🔍 Processing question: `{question}`")
     
-    if st.button("Logout"):
-        cookie_manager.delete("jwt")
-        st.session_state.clear()
-        st.rerun()
+    # if st.button("Logout"):
+    #     cookie_manager.delete("jwt")
+    #     st.session_state.clear()
+    #     st.rerun()
+
