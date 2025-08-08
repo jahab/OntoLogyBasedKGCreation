@@ -104,7 +104,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     
     writer = get_stream_writer() 
     writer({"data": "Case Metdata Extracted", "type": "progress"}) 
-    return {"case_metadata":case_metadata}
+    return {"case_metadata":nodes_and_rels}
 
 def get_models(provider: str, embedding_model: str, chat_model: str):
     provider = provider.lower()

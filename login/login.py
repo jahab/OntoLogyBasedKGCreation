@@ -87,8 +87,8 @@ def forgetpwd():
 
 if __name__ == '__main__':
     user_data = {
-        "username": "test_user",
-        "password": "test_password"  # In production: hash this!
+        "username": "admin",
+        "password": "admin@123"  # In production: hash this!
     }
     try:
         mycol.insert_one(user_data)

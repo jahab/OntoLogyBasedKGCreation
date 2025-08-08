@@ -73,10 +73,10 @@ def create_graph():
     # config = RunnableConfig(recursion_limit=300, **context)
     # task = invoke_graph.delay(graph)
     # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
-    data["username"] = "test_user"
+    data["username"] = "admin"
     task = create_invoke_graph.delay(data)
     user_collection = mongo_db["users"]
-    user_collection.update_one({"username": "test_user"}, {"$set": {"task_id":task.id}})
+    user_collection.update_one({"username": "admin"}, {"$set": {"task_id":task.id}})
     # r = redis.Redis(host="redis", port=6379, db=1)
     # r.setex(f"task_owner:{task.id}", 7200, user_id)
 
