@@ -20,45 +20,13 @@ from output_parser import *
 from neo4j import GraphDatabase
 import uuid
 import traceback
-# from mem0 import MemoryClient
 from refine_nodes import *
-
-
-
-# def retrieve_context(query: str, user_id: str) -> List[Dict]:
-#     """Retrieve relevant context from Mem0"""
-#     memories = mem0.search(query, user_id=user_id)
-#     seralized_memories = ' '.join([mem["memory"] for mem in memories])
-#     context = [
-#         { 
-#             "content": f"Relevant information: {seralized_memories}"
-#         },
-#         {
-#             "role": "user",
-#             "content": query
-#         }
-#     ]
-#     return context
-
-# def save_interaction(user_id: str, user_input: str, assistant_response: str):
-#     """Save the interaction to Mem0"""
-#     interaction = [
-#         {
-#           "role": "user",
-#           "content": user_input
-#         },
-#         {
-#             "role": "assistant",
-#             "content": assistant_response
-#         }
-#     ]
-#     mem0.add(interaction, user_id=user_id)
-
+import json
 
 if __name__ == "__main__":
     load_dotenv()
-    uri = "bolt://neo4j:7687"
-    vector_db_uri = "http://vector_db:6333"
+    uri = "bolt://0.0.0.0:7687"
+    vector_db_uri = "http://0.0.0.0:6333"
     os.environ["NEO4j_USER_NAME"] = os.getenv("NEO4j_USER_NAME")
     os.environ["NEO4j_PWD"] = os.getenv("NEO4j_PWD")
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
@@ -72,7 +40,7 @@ if __name__ == "__main__":
     create_constraint(driver)
     
     #read the Document
-    file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf")
+    file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf")
     text = read_document(file_path)
     doc =  Document(page_content=text, metadata={"source": "local"})
     
@@ -81,8 +49,7 @@ if __name__ == "__main__":
     model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # model = ChatOpenAI(model="gpt-4.1")
     
-    case_metadata = extract_case_metadata(model,text_chunks[0])
-    print("===========Case metadata:", case_metadata)
+    
     
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
@@ -104,11 +71,45 @@ if __name__ == "__main__":
     context = ""
     previous_chunk_id = None
     nodes_and_rels = ""
+    
+    case_metadata = extract_case_metadata(model,text_chunks[0])
+    print("===========Case metadata:", case_metadata)
+    
+    for item in case_metadata:
+        node1_type = item.node1_type
+        node2_type = item.node2_type
+        node1_value = item.node1_value
+        node2_value = item.node2_value
+        relationship = item.relationship
+        try:
+            resp = some_func_v2(driver, prop_extraction_chain, node1_type, node1_value, relationship, node2_type,  node2_value)
+            if resp:
+                model_output = resp["model_output"]
+                # print(model_output)
+                with driver.session() as session:
+                    session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
+                    session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
+                    session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
+        except Exception as e:
+            print(traceback.print_exc())
+            print("----------------------------------------------------------------------------------")
+            print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
+            print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
+            print("Relationship: ", model_output["relationship"])              
+
+    records = get_graph(driver)
+    for res in records:
+        if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
+            continue
+        nodes_and_rels.append(res)
+    nodes_and_rels =  format_triples(nodes_and_rels)
+    
+    
     for text_chunk in text_chunks:
         try:
             # Generate Response
             current_chunk_id = str(uuid.uuid4())
-            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": case_metadata})
+            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": json.dumps(case_metadata)})
             # print(resp.content)
             triples = KG_extraction_parser.parse(resp.content)
             # print(triples)
@@ -161,9 +162,10 @@ if __name__ == "__main__":
             records = get_graph(driver)
             nodes_and_rels  = []
             for res in records:
-                if ":Paragraph" in res:
+                if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
                     continue
                 nodes_and_rels.append(res)
+            nodes_and_rels =  format_triples(nodes_and_rels)
         except Exception as e:
             print(traceback.print_exc())
 

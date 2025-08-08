@@ -70,6 +70,38 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
 
 def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
+    print("===========Case metadata:", case_metadata)
+    for item in case_metadata:
+        node1_type = item.node1_type
+        node2_type = item.node2_type
+        node1_value = item.node1_value
+        node2_value = item.node2_value
+        relationship = item.relationship
+        try:
+            resp = some_func_v2(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
+            if resp:
+                model_output = resp["model_output"]
+                # print(model_output)
+                with config["configurable"]["context"]["neo4j_driver"].session() as session:
+                    session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
+                    session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
+                    session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
+        except Exception as e:
+            print(traceback.print_exc())
+            print("----------------------------------------------------------------------------------")
+            print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
+            print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
+            print("Relationship: ", model_output["relationship"])              
+
+    records = get_graph(config["configurable"]["context"]["neo4j_driver"])
+    for res in records:
+        if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
+            continue
+        nodes_and_rels.append(res)
+    nodes_and_rels =  format_triples(nodes_and_rels)
+
+    
+    
     writer = get_stream_writer() 
     writer({"data": "Case Metdata Extracted", "type": "progress"}) 
     return {"case_metadata":case_metadata}
@@ -144,7 +176,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         # Generate Response
         writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
-        resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
+        resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": json.dumps(state["case_metadata"])})
         # print(resp.content)
         triples = config["configurable"]["context"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)
@@ -198,7 +230,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
         for res in records:
-            if ":Paragraph" in res:
+            if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
                 continue
             nodes_and_rels.append(res)
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 

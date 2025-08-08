@@ -36,7 +36,7 @@ import traceback
 # from mem0 import MemoryClient
 from refine_nodes import *
 data = {
-    "pdf_file":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf",
+    "pdf_file":"35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf",
     "provider":"google",
     "embedding_model":"models/text-embedding-004",
     "extraction_model":"gemini-2.5-flash"
@@ -76,4 +76,4 @@ graph = workflow.compile()
 
 
 config = RunnableConfig(recursion_limit=300, **context)
-graph.invoke(input = {"doc_path":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf"}, config = {"context":config})
+graph.invoke(input = {"doc_path":"35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf"}, config = {"context":config})

@@ -255,7 +255,7 @@ def refine_parent_child_relation(driver, node1_type, node2_type, node1_val, node
     Returns: node and relationship in correct order 
     """
     # print("Relation Not Found.. Checking for subclasses")
-    print(f"[{refine_parent_child_relation.__name__}]",node1_type, node2_type)
+    print(f"[refine_parent_child_relation]",node1_type, node2_type)
     invalid_node = True
     with driver.session() as session:
         subclasses_nodes = session.execute_read(find_subclass, node1_type) 
@@ -263,7 +263,7 @@ def refine_parent_child_relation(driver, node1_type, node2_type, node1_val, node
     for sc in subclasses_nodes:
         if (node1_type == sc['child'] and node2_type == sc['parent']):
             # print(sc['child'], sc['parent'])
-            print("=========relation_correct")
+            # print("=========relation_correct")
             invalid_node = False
             break
         elif(node1_type == sc['parent'] and node2_type == sc['child']):
@@ -277,81 +277,6 @@ def refine_parent_child_relation(driver, node1_type, node2_type, node1_val, node
         else:
             invalid_node = True
     return node1_type, node2_type, node1_val, node2_val, invalid_node
-
-
-
-def make_correct_pairs(jsondata):
-    for json in jsondata:
-        for item in json:
-            node1_type = item["node1_type"]
-            node2_type = item["node2_type"]
-            node1_value = item["node1_value"]
-            node2_value = item["node2_value"]
-            relationship = item["relationship"]
-            invalid_relation = False
-            if relationship == "is_a":
-                # Check if the extracted node is a valid subclass or not
-                node1_type, node2_type, node1_value, node2_value,invalid_node = refine_parent_child_relation(node1_type,node2_type,node1_value,node2_value,relationship)
-                if invalid_node ==  True:
-                    print("Invalid Node relationship in subclass:", node1_type, relationship, node2_type)
-                    print("====================")
-                    continue
-            
-            # check if a valid relationship exists in ontology for between these node types
-            with driver.session() as session:
-                #first check for the valid relationship between node1 and the relationship itself
-                edges = session.execute_read(check_valid_relationship, node1_type, relationship)
-                print("Check for: ", node1_type, relationship, node2_type)
-                if len(edges)==0: #if relationship doesnot exist then check for parent-child relationship of the node
-                    print("Relation Not Found.. Checking for subclasses")
-                    subclasses_nodes = session.execute_read(find_subclass, node1_type)
-                    #check if Parent or child has a valid relation 
-                    print(subclasses_nodes)
-                    if len(subclasses_nodes)>0:
-                        for node in subclasses_nodes:
-                            print("******", node['child'], node['parent'])
-                            sc_nodes = session.execute_read(check_valid_relationship,node['child'],relationship)
-                            for e in sc_nodes:
-                                # If valid connection is found the replace node with proper node
-                                print("^^^--",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
-                                node1_type = e["p"]["n4sch__name"]
-                            sc_nodes = session.execute_read(check_valid_relationship,node['parent'],relationship)
-                            for e in sc_nodes:
-                                print("--^^^",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
-                                node1_type = e["p"]["n4sch__name"]
-                        invalid_relation = False
-                    else:
-                        invalid_relation = True
-
-
-                edges = session.execute_read(check_valid_relationship,node2_type,relationship)
-                print("Check for: ", node1_type,relationship,node2_type)
-                if len(edges)==0: #if relationship doesnot exist then check for parent-child relationship of the node
-                    print("Relation Not Found.. Checking for subclasses")
-                    subclasses_nodes = session.execute_read(find_subclass, node2_type)
-                    #check if Parent or child has a valid relation 
-                    print(subclasses_nodes)
-                    if len(subclasses_nodes)>0:
-                        for node in subclasses_nodes:
-                            print("******", node['child'], node['parent'])
-                            sc_nodes = session.execute_read(check_valid_relationship,node['child'],relationship)
-                            for e in sc_nodes:
-                                # If valid connection is found the replace node with proper node
-                                print("^^^--",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
-                                node2_type = e["p"]["n4sch__name"]
-                            sc_nodes = session.execute_read(check_valid_relationship,node['parent'],relationship)
-                            for e in sc_nodes:
-                                print("--^^^",e["p"]["n4sch__name"], e["o"]["n4sch__name"])
-                                node2_type = e["p"]["n4sch__name"]
-                        invalid_relation = False
-                    else:
-                        invalid_relation = True
-                # for e in edges:
-                #     print(e["p"]["n4sch__name"], e["o"]["n4sch__name"])
-                if invalid_relation == False:
-                    
-                    print(node1_type, node1_value, f"--[{relationship}]-->", node2_type, node2_value)
-                    print("====================")
 
 
 def get_constraints_for_label(tx, label):
@@ -390,14 +315,14 @@ def merge_node(tx, labels, value):
 
     # Step 1: Check for node key constraint
     constrained_keys_list = get_constraints_for_label(tx, label)
-    print(constrained_keys_list)
+    # print(constrained_keys_list)
     if constrained_keys_list:
         d = get_single_node(tx, label)
         if d:
             for key, val in d[0].items():
                 if val:
                     constrained_keys_list[0].append(key)
-        print("------",constrained_keys_list)
+        # print("------",constrained_keys_list)
         constrained_keys_list[0] = list(set(constrained_keys_list[0]))
     # constrained_keys_list = constrained_keys_list
     # Step 2: Choose a constraint if available
@@ -407,7 +332,7 @@ def merge_node(tx, labels, value):
             constrained_keys = keys
             break
 
-    print(constrained_keys)
+    # print(constrained_keys)
     if constrained_keys:
         # Use only constraint keys in MERGE
         merge_props = ", ".join(f"{k}: ${k}" for k in constrained_keys)
@@ -419,14 +344,14 @@ def merge_node(tx, labels, value):
             set_clause = ", ".join(f"n.{k} = ${k}" for k in set_props)
             query += f"\nSET {set_clause}"
 
-        print(f"[{merge_node}] : using constraint keys: {constrained_keys}")
+        # print(f"[{merge_node}] : using constraint keys: {constrained_keys}")
         tx.run(query, **value)
 
     else:
         # No constraints — fallback to using all props
         props = ", ".join(f"{k}: ${k}" for k in value)
         query = f"MERGE (n{label_str} {{ {props} }})"
-        print(f"[{merge_node}] : no constraints, merging on all props")
+        # print(f"[{merge_node}] : no constraints, merging on all props")
         tx.run(query, **value)
 
 def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, relationship):
@@ -476,53 +401,33 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     # Merge all parameters
     params = {**node1_params, **node2_params}
 
-    print("Query:\n", query)
-    print("Params:", params)
+    # print("Query:\n", query)
+    # print("Params:", params)
 
     tx.run(query, **params)
 
 
-def merged_node_with_label_and_prop(driver, node:str):
-    # find subclass and superclass  and properties for the given node
-    print("Received_node",node)
-    node_dict = {"properties":{}, "labels": [node]}
-    parent_node = None
-    with driver.session() as session:
-        # while True:
-        for _ in range(10):
+# What I wnat to do: If I am at a node the find all its parents. and Find all its properties.
+# To find all the parents first I need to know all the subclasses
+
+# First Lets find all the parents-> 
+def merged_node_with_label_and_prop(driver,node:str)->dict:
+    node_labels = []
+    node_properties = {}
+    def _find_labels_and_properties(driver, node):
+        with driver.session() as session:
             subclass_nodes = session.execute_read(find_subclass, node)
-            # print(subclass_nodes)
-            if (len(subclass_nodes)>0):
-                for sc_node in subclass_nodes:
-                    if sc_node["parent"] != node:
-                        if sc_node["parent"] not in node_dict["labels"]:
-                            node_dict["labels"].append(sc_node["parent"])
-                        props = session.execute_read(find_property, sc_node["parent"])
-                        if len(props)>0:
-                            prop_dict = {}
-                            for prop in props:
-                                prop_dict[prop["property"]] = ""
-                            node_dict["properties"] = prop_dict
-                            # break
-                        else: #if no property is found then traverse to more depth
-                            node = sc_node["parent"]
-                            # break
-                    else:
-                        props = session.execute_read(find_property,node)
-                        if len(props)>0:
-                            prop_dict = {}
-                            for prop in props:
-                                prop_dict[prop["property"]] = ""
-                            node_dict["properties"] = prop_dict    
-            else:
-                props = session.execute_read(find_property,node)
-                if len(props)>0:
-                    prop_dict = {}
-                    for prop in props:
-                        prop_dict[prop["property"]] = ""
-                    node_dict["properties"] = prop_dict
-                    break
-                
+            props = session.execute_read(find_property, node)
+            for prop in props:
+                node_properties[prop["property"]] = ""
+        for sc_node in subclass_nodes:
+            if sc_node["parent"] == node:
+                return
+            node_labels.append(sc_node["parent"])
+            _find_labels_and_properties(driver, sc_node["parent"])
+    node_labels.append(node)
+    _find_labels_and_properties(driver, node)
+    node_dict = {"properties":node_properties, "labels": node_labels}
     return node_dict
 
 
@@ -537,23 +442,24 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
             print("Invalid Node relationship in subclass:", node1_type, relationship, node2_type)
             print("====================")
             return
+        return
     node1_dict = merged_node_with_label_and_prop(driver, node1_type) # {'properties': {'COLastName': '', 'COFirstName': ''},'labels': ['Judge', 'Court_Official']}
     node2_dict = merged_node_with_label_and_prop(driver, node2_type)
     # check if a valid relationship exists in ontology for between these node types
-    print("[some_func_v2]\n", node1_dict, "\n",node2_dict)
+    print("[some_func_v2]\n", "node1_dict:",node1_dict, "\n","node2_dict:",node2_dict)
     for label_1 in node1_dict['labels']:
         for label_2 in node2_dict['labels']:
             with driver.session() as session:
                 edges = session.execute_read(check_valid_relationship, label_1, relationship, label_2) 
                 for e in edges:
-                    print("--^^^",e["n1"]["n4sch__name"],node1_dict["properties"], e["r"]["n4sch__name"], e["n2"]["n4sch__name"], node2_dict["properties"])
-
+                    print("[TRIPLE in FUNC:]",node1_type,node1_dict["properties"], e["r"]["n4sch__name"], node2_type, node2_dict["properties"])
+                    print("[TRIPLE TO EXTRACT:]",e["n1"]["n4sch__name"],node1_dict["properties"], node1_value, e["r"]["n4sch__name"], e["n2"]["n4sch__name"], node2_dict["properties"], node2_value)
                     dc = prop_ex_chain.invoke({"node1_type": node1_type, "node2_type": node2_type,
                                        "relationship":relationship, 
                                        "node1_value":node1_value, "node2_value":node2_value,
-                                       "node1_property":node1_dict["properties"], "node2_property":node2_dict["properties"],
+                                       "node1_property":json.dumps(node1_dict["properties"]), "node2_property":json.dumps(node2_dict["properties"]),
                                        })
-                    
+                    print("[MODEL OUTPUT:]",dc)
                     return {"node1_dict":node1_dict,"node2_dict":node2_dict, "model_output":dc}
                     
 
@@ -562,7 +468,7 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
 
 def get_nodes_and_rels(tx):
     query = """
-    MATCH p = (n)-[r]-(s)
+    MATCH p = (n)-[r]->(s)
     WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
     AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
     return n,r,s
@@ -582,15 +488,39 @@ def get_graph(driver):
         s = record["s"]
 
         def format_node(node):
-            labels = ":".join(node.labels)
+            labels = list(node.labels)
             props = node._properties
-            return f"(:{labels} {props})"
+            return labels,props
 
-        rel = f"-[:{r.type}]->" if r.start_node.element_id == n.element_id else f"<-[:{r.type}]-"
-        results.append(f"{format_node(n)}{rel}{format_node(s)}")
+        source = format_node(n)
+        target = format_node(s)
+        # rel = f"-[:{r.type}]->" if r.start_node.element_id == n.element_id else f"<-[:{r.type}]-"
+        d = {"source_labels":source[0], "source_props": source[1],"target_labels":target[0], "target_props":target[1], "relationship":r.type }
+        results.append(d)
+        # results.append(f"{format_node(n)}{rel}{format_node(s)}")
     return results
 
+def format_triples(triples: list[dict]) -> str:
+    formatted = []
+    for i, triple in enumerate(triples, start=1):
+        src_label = triple["source_labels"]
+        src_props = triple["source_props"]
+        rel = triple["relationship"]
+        tgt_labels = triple["target_labels"]
+        tgt_props = triple["target_props"]
 
+        def props_to_str(props):
+            return "\n".join(f"  - {k}: {v}" for k, v in props.items() if v)
+
+        part = (
+            f"Triple {i}:\n"
+            f"{src_label}:\n{props_to_str(src_props)}\n\n"
+            f"Relationship: {rel}\n\n"
+            f"{' / '.join(tgt_labels)}:\n{props_to_str(tgt_props)}\n"
+            + "---"
+        )
+        formatted.append(part)
+    return "\n\n".join(formatted)
 
 
 def check_duplicate_nodes(node_type:str,prop_key:str, prop_val:str):
@@ -870,15 +800,15 @@ def read_chunk(text_chunks):
         
 
 def extract_case_metadata(model,chunk)->Dict:
-    case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
+    case_metadata_parser = ListOfTriplesParser(NodeTriple)
     metadata_extract_template = ChatPromptTemplate(
-        messages = [("system", METADATA_EXTRACTION_PROMPT),("user","{text}") ],
+	    messages = [("system", METADATA_EXTRACTION_PROMPT), ("user", "{text}")],
         partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
     )
-    
-    meta_extraction_chain = metadata_extract_template | model | case_metadata_parser
+    meta_extraction_chain = metadata_extract_template | model
     case_metadata = meta_extraction_chain.invoke({"text":chunk})
-    return case_metadata
+    triples = case_metadata_parser.parse(case_metadata.content)
+    return triples
 
 
 if __name__ == "__main__":
@@ -896,7 +826,5 @@ if __name__ == "__main__":
         jsondata = json.load(file)
     
     # test
-    make_correct_pairs(jsondata["Data"])
-    # Test
     merged_node_with_label_and_prop("Judge")
         
