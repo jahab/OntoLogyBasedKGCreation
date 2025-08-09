@@ -7,7 +7,6 @@ from langgraph.types import interrupt, Command
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
-# from langgraph.runtime import Runtime
 from langchain_core.runnables import RunnableConfig
 from langgraph.config import get_stream_writer
 
@@ -71,6 +70,7 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
 def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
     print("===========Case metadata:", case_metadata)
+    nodes_and_rels = []
     for item in case_metadata:
         node1_type = item.node1_type
         node2_type = item.node2_type
@@ -88,23 +88,26 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
                     session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
         except Exception as e:
             print(traceback.print_exc())
-            print("----------------------------------------------------------------------------------")
-            print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
-            print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
-            print("Relationship: ", model_output["relationship"])              
+            print("----------------------------------------------------------------------------------")            
 
     records = get_graph(config["configurable"]["context"]["neo4j_driver"])
     for res in records:
-        if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
+        if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
             continue
+        res["source_labels"], res["source_props"]
         nodes_and_rels.append(res)
     nodes_and_rels =  format_triples(nodes_and_rels)
 
-    
-    
     writer = get_stream_writer() 
     writer({"data": "Case Metdata Extracted", "type": "progress"}) 
-    return {"case_metadata":nodes_and_rels}
+    
+    metadata_extract_template = ChatPromptTemplate(
+            messages = [("system", METADATA_REFINE_PROMPT), ("user", "{text}")]
+        )
+    meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
+    resp =  meta_extraction_chain.invoke({"text": nodes_and_rels})
+    print("[CASEMETA] : ",resp.content)
+    return {"case_metadata":resp.content}
 
 def get_models(provider: str, embedding_model: str, chat_model: str):
     provider = provider.lower()

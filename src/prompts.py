@@ -281,31 +281,114 @@ Output:
 """
 
 
+# PROP_EXTRACTION_PROMPT = """
+# I am supplying you 2 nodes and their values with relationship. Additionally, I am also providing you the schema
+# and properties of the nodes. Your job is to fill the appropriate property based on the values you see. 
+# If and only if the node_property is empty or {{}} or  "" then use "text" as key and nothing else.
+# Do not add any extra node or properties from your end.
+
+# node1_type: {node1_type}
+# node1_value:  {node1_value}
+# relationship: {relationship}
+# node2_type: {node2_type}
+# node2_value:  {node2_value}
+
+# ## Output Format 
+# {format_instructions}
+
+# return a well formatted json dict. Do not wrap your output in markdown or text formatting.
+# {{
+# "node1_type": {node1_type}
+# "node1_property" : {node1_property} # you are required to fill this up
+# "relationship": {relationship}
+# "node2_type": {node2_type}
+# "node2_property" : {node2_property} # you are required to fill this up
+# }}
+# """
+
+
+
+
+
 PROP_EXTRACTION_PROMPT = """
+You are given two nodes and their values with a relationship. Your job is to fill the provided node_property objects only using the given node_value(s). Follow these rules exactly.
+Rules  
+1. DO NOT add or remove node types, properties, or nodes. Use only the keys already present in node1_property and node2_property. Never introduce new property names.
+2. When to use "text":
+  - Use "text" if and only if the provided nodeX_property is empty — that means either {{}} (an empty dict) or "" (an empty string). In that case, set nodeX_property to {{"text": nodeX_value}} and nothing else.
+3. When property keys exist (even if they are empty strings)
+  - Always use the provided keys. Do not replace them with "text".
+  - If nodeX_value is a dictionary/object and contains keys matching any property keys, copy those values into the corresponding property keys.
+  - If nodeX_value is a plain string and the property keys exist then assign the values based on best logic.
+  - If no best logic can be found then stuff everything in first key. For example. node1_value: "state of Haryana" then correct assignment will be  {{"firstName":"State of Haryana", "lastName":""}} incorrect assignment will be {{"firstName":"State", "lastName":"of Haryana"}}. So Dont act dumb. 
+5. Return a well formatted json dict. Do not wrap your output in markdown or text formatting.
 
-I am supplying you 2 nodes and their values with relationship. Additionally, I am also providing you the schema
-and properties of the nodes. Your job is to fill the appropriate property based on the values you see. 
-If and only if the node_property is empty or {{}} or  "" then use "text" as key and nothing else.
-Do not add any extra node or properties from your end.
-
+Input  
 node1_type: {node1_type}
-node1_value:  {node1_value}
+node1_value: {node1_value} # This is given to you
+node1_property : {node1_property} # you are required to fill this up based on node1_value
 relationship: {relationship}
 node2_type: {node2_type}
-node2_value:  {node2_value}
+node2_value: {node2_value} # This is given to you
+node2_property : {node2_property} # you are required to fill this up based on node2_value
 
 ## Output Format 
 {format_instructions}
 
-return a well formatted json dict. Do not wrap your output in markdown or text formatting.
-{{
-"node1_type": {node1_type}
-"node1_property" : {node1_property} # you are required to fill this up
-"relationship": {relationship}
-"node2_type": {node2_type}
-"node2_property" : {node2_property} # you are required to fill this up
-}}
+## Example
+  - ###Input
+  node1_type: CourtCase
+  node1_value: {{'hasCaseID': 'Sessions Case No.149/2001'}}
+  node1_property: {{'neutralCitations': '', 'hasCaseID': '', 'equivalentCitation': '', 'hasCaseName': ''}}
+  relationship: hasParty
+  node2_type: Accussed
+  node2_value: Jagan Ram
+  node2_property: {{'firstName': '', 'lastName': ''}}
+
+  - ###Output
+  {{
+    "node1_type": "CourtCase",
+    "node1_property": {{
+      "neutralCitations": "",
+      "hasCaseID": "Sessions Case No.149/2001",
+      "equivalentCitation": "",
+      "hasCaseName": ""
+    }},
+    "relationship": "hasParty",
+    "node2_type": "Accussed",
+    "node2_property": {{
+      "firstName": "Jagan",
+      "lastName": "Ram"
+    }}
+  }}
+
 """
+
+
+METADATA_REFINE_PROMPT = """
+You are required to extract the follwoing from the given text. If some of fields are not present do not output them. Do nodd any extra information other than these fields.
+Extract:
+-court_name: The name of the court.
+-court_type: District_Court/SupremeCourt/Tribunal/High_Court/Metropolitian_Courts/Session_Court
+-case_name: The names of the parties involved in the case.
+-case_id: The case number.
+-Judge:
+-Lawyer:
+-Counsel:
+-Solicitor:
+-court_decision: Order/Judgement/Decree
+-Appellant:
+-Defendant:
+-Respondent:
+-Plaintiff:
+-Accused:
+-Petitioner:
+-DateOfJudgement:
+-citations: citation to a Case/ Act/ Law/ Article
+"""
+
+
+
 
 METADATA_EXTRACTION_PROMPT = """
 You are an expert in building legal knowledge graphs and ontology-based information extraction.
@@ -412,10 +495,9 @@ Your job is to:
 
 -court_name: The name of the court.
 -court_type: District_Court/SupremeCourt/Tribunal/High_Court/Metropolitian_Courts/Session_Court
--case_id: The case number.
 -case_name: The names of the parties involved in the case.
--citations: citation to a Case/ Act/ Law/ Article
--Court Official
+-case_id: The case number.
+-Court Official: Judge/Lawyer/Counsel
 -court_decision: Order/Judgement/Decree
 -Appellant 
 -Defendant
@@ -424,6 +506,7 @@ Your job is to:
 -Accused
 -Petitioner
 -DateOfJudgement
+-citations: citation to a Case/ Act/ Law/ Article
 
 ## Output Format 
 ### Output format (for each extracted relation):

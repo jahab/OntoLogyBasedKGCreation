@@ -477,30 +477,28 @@ def get_nodes_and_rels(tx):
 
 
 def get_graph(driver):
-
+    def format_node(node):
+        labels = list(node.labels)
+        props = node._properties
+        return labels,props
+    
     with driver.session() as session:
         result = session.execute_read(get_nodes_and_rels)
-
     results= []
     for record in result:
         n = record["n"]
         r = record["r"]
         s = record["s"]
 
-        def format_node(node):
-            labels = list(node.labels)
-            props = node._properties
-            return labels,props
-
         source = format_node(n)
         target = format_node(s)
-        # rel = f"-[:{r.type}]->" if r.start_node.element_id == n.element_id else f"<-[:{r.type}]-"
         d = {"source_labels":source[0], "source_props": source[1],"target_labels":target[0], "target_props":target[1], "relationship":r.type }
         results.append(d)
-        # results.append(f"{format_node(n)}{rel}{format_node(s)}")
     return results
 
 def format_triples(triples: list[dict]) -> str:
+    def props_to_str(props):
+        return "\n".join(f"  - {k}: {v}" for k, v in props.items() if v)
     formatted = []
     for i, triple in enumerate(triples, start=1):
         src_label = triple["source_labels"]
@@ -508,10 +506,6 @@ def format_triples(triples: list[dict]) -> str:
         rel = triple["relationship"]
         tgt_labels = triple["target_labels"]
         tgt_props = triple["target_props"]
-
-        def props_to_str(props):
-            return "\n".join(f"  - {k}: {v}" for k, v in props.items() if v)
-
         part = (
             f"Triple {i}:\n"
             f"{src_label}:\n{props_to_str(src_props)}\n\n"
