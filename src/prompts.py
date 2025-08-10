@@ -320,7 +320,7 @@ Rules
   - Always use the provided keys. Do not replace them with "text".
   - If nodeX_value is a dictionary/object and contains keys matching any property keys, copy those values into the corresponding property keys.
   - If nodeX_value is a plain string and the property keys exist then assign the values based on best logic.
-  - If no best logic can be found then stuff everything in first key. For example. node1_value: "state of Haryana" then correct assignment will be  {{"firstName":"State of Haryana", "lastName":""}} incorrect assignment will be {{"firstName":"State", "lastName":"of Haryana"}}. So Dont act dumb. 
+  - If no best logic can be found then stuff everything in first key. For example. node1_value: "state of Haryana" then correct assignment will be  {{"firstName":"State of Haryana", "lastName":""}} and incorrect assignment will be {{"firstName":"State", "lastName":"of Haryana"}}. So dont act dumb. 
 5. Return a well formatted json dict. Do not wrap your output in markdown or text formatting.
 
 Input  
@@ -335,7 +335,7 @@ node2_property : {node2_property} # you are required to fill this up based on no
 ## Output Format 
 {format_instructions}
 
-## Example
+## Example 1
   - ###Input
   node1_type: CourtCase
   node1_value: {{'hasCaseID': 'Sessions Case No.149/2001'}}
@@ -361,7 +361,79 @@ node2_property : {node2_property} # you are required to fill this up based on no
       "lastName": "Ram"
     }}
   }}
+## Example 2
+  - ###Input
+  node1_type: CourtCase
+  node1_value: {{'hasCaseID': 'Sessions Case No.149/2001'}}
+  node1_property: {{'neutralCitations': '', 'hasCaseID': '', 'equivalentCitation': '', 'hasCaseName': ''}}
+  relationship: hasFact
+  node2_type: Fact
+  node2_value: "person retruning from the market"
+  node2_property: {{}}
 
+  - ###Output
+  {{
+    "node1_type": "CourtCase",
+    "node1_property": {{
+      "neutralCitations": "",
+      "hasCaseID": "Sessions Case No.149/2001",
+      "equivalentCitation": "",
+      "hasCaseName": ""
+    }},
+    "relationship": "hasFact",
+    "node2_type": "Fact",
+    "node2_property": {{
+      "text": "person retruning from the market"
+    }}
+  }}
+
+## Example 3
+  - ###Input
+  node1_type: CourtCase
+  node1_value: {{'hasCaseID': 'Sessions Case No.149/2001'}}
+  node1_property: {{'neutralCitations': '', 'hasCaseID': '', 'equivalentCitation': '', 'hasCaseName': ''}}
+  relationship: hasOpinion
+  node2_type: Opinion
+  node2_value: {{"text": "need to do reassessment of the forensics. Bail denied to the party."}}
+  node2_property: {{}}
+
+  - ###Output
+  {{
+    "node1_type": "CourtCase",
+    "node1_property": {{
+      "neutralCitations": "",
+      "hasCaseID": "Sessions Case No.149/2001",
+      "equivalentCitation": "",
+      "hasCaseName": ""
+    }},
+    "relationship": "hasOpinion",
+    "node2_type": "Opinion",
+    "node2_property": {{"text": "need to do reassessment of the forensics. Bail denied to the party."}}
+  }}
+
+## Example 4
+  - ###Input
+  node1_type: CourtCase
+  node1_value: {{'hasCaseID': 'Sessions Case No.149/2001'}}
+  node1_property: {{'neutralCitations': '', 'hasCaseID': '', 'equivalentCitation': '', 'hasCaseName': ''}}
+  relationship: hasEvidence
+  node2_type: Evidence
+  node2_value: {{"evidence_location": "Sector 33 Markeytard", "evidence_type":"fingerprints"}}
+  node2_property: {{}}
+
+  - ###Output
+  {{
+    "node1_type": "CourtCase",
+    "node1_property": {{
+      "neutralCitations": "",
+      "hasCaseID": "Sessions Case No.149/2001",
+      "equivalentCitation": "",
+      "hasCaseName": ""
+    }},
+    "relationship": "hasEvidence",
+    "node2_type": "Evidence",
+    "node2_property": {{"text": "Sector 33 Markeytard fingerprints"}}
+  }}
 """
 
 

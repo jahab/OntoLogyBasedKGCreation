@@ -508,7 +508,7 @@ def format_triples(triples: list[dict]) -> str:
         tgt_props = triple["target_props"]
         part = (
             f"Triple {i}:\n"
-            f"{src_label}:\n{props_to_str(src_props)}\n\n"
+            f"{"".join(src_label)}:\n{props_to_str(src_props)}\n\n"
             f"Relationship: {rel}\n\n"
             f"{' / '.join(tgt_labels)}:\n{props_to_str(tgt_props)}\n"
             + "---"
