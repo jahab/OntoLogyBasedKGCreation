@@ -437,6 +437,7 @@ node2_property : {node2_property} # you are required to fill this up based on no
 """
 
 
+
 METADATA_REFINE_PROMPT = """
 You are required to extract the follwoing from the given text. If some of fields are not present do not output them. Do nodd any extra information other than these fields.
 Extract:
@@ -458,8 +459,6 @@ Extract:
 -DateOfJudgement:
 -citations: citation to a Case/ Act/ Law/ Article
 """
-
-
 
 
 METADATA_EXTRACTION_PROMPT = """
@@ -617,7 +616,6 @@ CRIMINAL APPEAL NO.1115 OF 2010
 BALVIR SINGH …Appellant
 VERSUS
 STATE OF MADHYA PRADESH …Respondent
-
 WITH
 CRIMINAL APPEAL NO.1116 OF 2010
 BHAV SINGH …Appellant
@@ -759,4 +757,18 @@ Node2:
 
 ## Examples
 
+"""
+EXTRACT_COURTCASE_DETAILS_PROMPT = """
+Extract the following information from the provided text and return it as a JSON object:
+
+- **case_id**: The case number.
+- **court_name**: The name of the court.
+- **case_name**: The names of the parties involved in the case.
+
+## EXAMPLE
+{{"hasCaseName": "Balvir Singh Versus State of Madhya Pradesh", 
+"hasCaseID":"Criminal Appeal No.1115 Of 2010"}}
+
+## Output Format 
+{format_instructions}
 """

@@ -30,7 +30,7 @@ from global_import import *
 class KGBuilderState(TypedDict):
     doc_path: str
     messages: str | Dict
-    case_metadata: Dict
+    case_metadata: str | Dict
     full_text: str
     text_chunks: str | None
     merge_node: str | None
@@ -39,6 +39,7 @@ class KGBuilderState(TypedDict):
     nodes_and_rels: List
     num_chunks : int
     chunk_counter : int
+    courtcase_details: Dict
     
 class KGBuilderContext(TypedDict):
     neo4j_driver:Any
@@ -135,7 +136,6 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             resp = some_func_v2(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
             if resp:
                 model_output = resp["model_output"]
-                # print(model_output)
                 with config["configurable"]["context"]["neo4j_driver"].session() as session:
                     session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                     session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
@@ -161,7 +161,16 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
     resp =  meta_extraction_chain.invoke({"text": nodes_and_rels})
     print("[CASEMETA] : ",resp.content)
-    return {"case_metadata":resp.content, "nodes_and_rels": nodes_and_rels}
+    
+    case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
+    courtcase_extract_template = ChatPromptTemplate(
+            messages = [("system", EXTRACT_COURTCASE_DETAILS_PROMPT), ("user", "{text}")],
+            partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
+        )
+    case_extraction_chain = courtcase_extract_template | config["configurable"]["context"]["extraction_model"] | case_metadata_parser
+    case_extract =  case_extraction_chain.invoke({"text": state["chunk"]})
+       
+    return {"case_metadata":resp.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
 
 def get_models(provider: str, embedding_model: str, chat_model: str):
     provider = provider.lower()
@@ -210,12 +219,11 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
                 print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
                 print("Relationship: ", model_output["relationship"])              
-                            
-        
+                              
         with config["configurable"]["context"]["neo4j_driver"].session() as session:
-            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["case_metadata"]["hasCaseName"], "hasCaseID":state["case_metadata"]["hasCaseID"]})
+            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
             session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
-            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["case_metadata"]["hasCaseName"], "hasCaseID":state["case_metadata"]["hasCaseID"]}, 
+            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
                                                         "hasParagraph")
             
