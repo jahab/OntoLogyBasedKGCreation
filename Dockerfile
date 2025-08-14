@@ -3,6 +3,7 @@ WORKDIR /app
 # ENV KG_APP=app.py
 # ENV FLASK_RUN_HOST=0.0.0.0
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 COPY src .
-CMD ["python","tasks.py"]
+RUN chmod +x entry_point.sh
+ENTRYPOINT ["entry_point.sh"]

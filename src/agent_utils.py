@@ -159,8 +159,8 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             messages = [("system", METADATA_REFINE_PROMPT), ("user", "{text}")]
         )
     meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
-    resp =  meta_extraction_chain.invoke({"text": nodes_and_rels})
-    print("[CASEMETA] : ",resp.content)
+    metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
+    print("[CASEMETA] : ",metadata.content)
     
     case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
     courtcase_extract_template = ChatPromptTemplate(
@@ -170,7 +170,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_extraction_chain = courtcase_extract_template | config["configurable"]["context"]["extraction_model"] | case_metadata_parser
     case_extract =  case_extraction_chain.invoke({"text": state["chunk"]})
        
-    return {"case_metadata":resp.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
+    return {"case_metadata":metadata.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
 
 def get_models(provider: str, embedding_model: str, chat_model: str):
     provider = provider.lower()

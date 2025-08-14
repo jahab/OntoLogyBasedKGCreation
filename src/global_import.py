@@ -14,7 +14,6 @@ CHAT_MODEL_MAP = {
     "openai": lambda model: ChatOpenAI(model=model),
     "google": lambda model: ChatGoogleGenerativeAI(model=model),
     "anthropic": lambda model: ChatAnthropic(model=model),
-    # Add more providers like "cohere", "mistral", etc. as needed
 }
 
 USER_QUEUE = {"user_id": [], "task_id":[]} #TODO: FIXME: CRITICAL: Need a mutex on this queue other wise use mongo DB fro polling
