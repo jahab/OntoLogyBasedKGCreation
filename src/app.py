@@ -38,6 +38,7 @@ if __name__ == "__main__":
 
     #create_constraint
     create_constraint(driver)
+    create_index(driver)
     
     #read the Document
     file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf")

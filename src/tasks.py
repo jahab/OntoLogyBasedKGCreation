@@ -36,6 +36,7 @@ def create_invoke_graph(self, data):
     load_ontology(context["neo4j_driver"])
     #create_constraint
     create_constraint(context["neo4j_driver"])
+    create_index(context["neo4j_driver"])
 
     # llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     tools = ToolNode([read_document,chunk_pdf])

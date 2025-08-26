@@ -162,6 +162,16 @@ def load_ontology(driver):
 
 
 
+def create_index(driver):
+    def _create_index(tx):
+        query = """
+        CREATE TEXT INDEX  paragraph IF NOT EXISTS FOR (n:Paragraph) ON (n.text) 
+        """
+        tx.run(query)
+        
+    with driver.session() as session:
+        res = session.execute_read(_create_index)
+
 def create_constraint(driver):
     def _create_constraint(tx):
         query = """
@@ -299,7 +309,7 @@ def get_constraints_for_label(tx, label):
     result = tx.run(query, label=label)
     return [r["properties"] for r in result]  # List of lists
 
-def get_single_node(tx, label):
+def get_nodes_by_label(tx, label):
     query = """
     MATCH (n:{}) RETURN n;
     """
@@ -315,15 +325,33 @@ def merge_node(tx, labels, value):
 
     # Step 1: Check for node key constraint
     constrained_keys_list = get_constraints_for_label(tx, label)
-    # print(constrained_keys_list)
+    print("====",constrained_keys_list)
+    node_corpus = []
     if constrained_keys_list:
-        d = get_single_node(tx, label)
-        if d:
-            for key, val in d[0].items():
+        d = get_nodes_by_label(tx, label)
+        for node in d:
+            tmp_str = ""
+            for key, val in node.items():
+                tmp_str = tmp_str + f"{key}:{val}, "
+            node_corpus.append(tmp_str)
+        retriever = bm25s.BM25(corpus=node_corpus)
+        retriever.index(bm25s.tokenize(node_corpus))
+        
+        query = ""
+        for key,val in value.items():
+            query = query+f"{key}:{val} "
+        results, scores = retriever.retrieve(bm25s.tokenize(query), k=1)
+        if scores[0][0]>1:
+            index = node_corpus.index(results[0][0])        
+            for key, val in d[index].items():
                 if val:
                     constrained_keys_list[0].append(key)
-        # print("------",constrained_keys_list)
-        constrained_keys_list[0] = list(set(constrained_keys_list[0]))
+                    if not value[key]: # update the value key if key is available in graph but not in model
+                        value[key] = val
+                    print("+++",value[key], key, val)
+            constrained_keys_list[0] = list(set(constrained_keys_list[0]))
+        else:
+            constrained_keys_list = []
     # constrained_keys_list = constrained_keys_list
     # Step 2: Choose a constraint if available
     constrained_keys = None
@@ -332,26 +360,28 @@ def merge_node(tx, labels, value):
             constrained_keys = keys
             break
 
-    # print(constrained_keys)
+    print("constrained_keys",constrained_keys)
     if constrained_keys:
         # Use only constraint keys in MERGE
         merge_props = ", ".join(f"{k}: ${k}" for k in constrained_keys)
         query = f"MERGE (n{label_str} {{ {merge_props} }})"
 
         # Now SET all the other properties (excluding merge keys)
+        
         set_props = [k for k in value if k not in constrained_keys]
         if set_props:
             set_clause = ", ".join(f"n.{k} = ${k}" for k in set_props)
             query += f"\nSET {set_clause}"
 
-        # print(f"[{merge_node}] : using constraint keys: {constrained_keys}")
+        print(f"[merge_node:] using constraint keys: {constrained_keys}")
+        print(query)
         tx.run(query, **value)
 
     else:
         # No constraints — fallback to using all props
         props = ", ".join(f"{k}: ${k}" for k in value)
         query = f"MERGE (n{label_str} {{ {props} }})"
-        # print(f"[{merge_node}] : no constraints, merging on all props")
+        print(f"[{merge_node}] : no constraints, merging on all props")
         tx.run(query, **value)
 
 def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, relationship):
