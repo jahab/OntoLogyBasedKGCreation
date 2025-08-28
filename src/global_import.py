@@ -2,12 +2,13 @@ from  langchain_community.embeddings import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.chat_models import  ChatAnthropic
+from sentence_transformers import SentenceTransformer
 import enum
 import pymongo
 
 EMBEDDING_MAP = {
     "openai": lambda model: OpenAIEmbeddings(model=model),
-    "google": lambda model: GoogleGenerativeAIEmbeddings(model=model),
+    "google": lambda model: GoogleGenerativeAIEmbeddings(model=model)
 }
 
 CHAT_MODEL_MAP = {

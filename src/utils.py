@@ -11,6 +11,7 @@ import json
 from vector_store import  *
 from prompts import *
 from output_parser import *
+import bm25s
 
 def get_node_labels(tx):
     result = tx.run("CALL db.labels()")
@@ -31,7 +32,6 @@ def get_label_connections(tx):
     RETURN DISTINCT labels(a)[0] AS from_label, type(r) AS rel_type, labels(b)[0] AS to_label
     """
     return list(tx.run(query))
-
 
 
 def getAllRelationships(tx):
@@ -170,7 +170,7 @@ def create_index(driver):
         tx.run(query)
         
     with driver.session() as session:
-        res = session.execute_read(_create_index)
+        res = session.execute_write(_create_index)
 
 def create_constraint(driver):
     def _create_constraint(tx):

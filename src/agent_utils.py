@@ -85,7 +85,7 @@ def init_context(data):
     # extraction_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # extraction_model = ChatOpenAI(model="gpt-4.1")
     
-    embedding_instance, extraction_model = get_models(data["provider"], data["embedding_model"], data["extraction_model"])
+    embedding_instance, extraction_model = get_models(data["model_provider"], data["embedding_provider"],data["embedding_model"], data["extraction_model"])
     
     driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
@@ -172,14 +172,15 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
        
     return {"case_metadata":metadata.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
 
-def get_models(provider: str, embedding_model: str, chat_model: str):
-    provider = provider.lower()
+def get_models(model_provider: str, embedding_provider:str, embedding_model: str, chat_model: str):
+    model_provider = model_provider.lower()
+    embedding_provider = embedding_provider.lower()
     try:
-        embedding_instance = EMBEDDING_MAP[provider](embedding_model)
-        chat_instance = CHAT_MODEL_MAP[provider](chat_model)
+        embedding_instance = EMBEDDING_MAP[embedding_provider](embedding_model)
+        chat_instance = CHAT_MODEL_MAP[model_provider](chat_model)
         return embedding_instance, chat_instance
     except KeyError:
-        raise ValueError(f"Unsupported provider: {provider}")
+        raise ValueError(f"Unsupported provider: {traceback.format_exc()}")
 
 
 def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
