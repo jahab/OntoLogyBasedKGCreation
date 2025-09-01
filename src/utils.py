@@ -317,41 +317,74 @@ def get_nodes_by_label(tx, label):
     return [r["n"] for r in result]  # List of lists
 
 
+# FIXME: CRITICAL: BM25 retreiver does not work well with a small corpus.
+#  If the len(node_corpus) = 1, 2, 3 BM25 will fail.
+# Need a fall back mechanism on using local embeddings. Or find a way to merge the query --> Fixed but flaky
 
 def merge_node(tx, labels, value):
     # Handle single or multiple labels
     label_str = ":" + ":".join(labels) if isinstance(labels, list) else f":{labels}"
     label = labels[0] if isinstance(labels, list) else labels
-
+    retriever = None
     # Step 1: Check for node key constraint
     constrained_keys_list = get_constraints_for_label(tx, label)
-    print("====",constrained_keys_list)
+    print("=constrained_keys_list=",constrained_keys_list)
     node_corpus = []
     if constrained_keys_list:
         d = get_nodes_by_label(tx, label)
+        print(d)
+        # collect all the information of the nodes in a string and 
+        # append it to list to make a corpus for BM25 search
         for node in d:
             tmp_str = ""
             for key, val in node.items():
-                tmp_str = tmp_str + f"{key}:{val}, "
-            node_corpus.append(tmp_str)
-        retriever = bm25s.BM25(corpus=node_corpus)
-        retriever.index(bm25s.tokenize(node_corpus))
+                if key in constrained_keys_list[0]:
+                    tmp_str = tmp_str + f"{key}:{val}, "
+            node_corpus.append(tmp_str) 
+        # this contains the information of all nodes based on a given a label
+        # ["CourtCase1 - properties", "CourtCase2 - properties" ..]
+        print("node_corpus", node_corpus)
+        if node_corpus:
+            retriever = bm25s.BM25(corpus=node_corpus)
+            retriever.index(bm25s.tokenize(node_corpus))
         
-        query = ""
-        for key,val in value.items():
-            query = query+f"{key}:{val} "
-        results, scores = retriever.retrieve(bm25s.tokenize(query), k=1)
-        if scores[0][0]>1:
-            index = node_corpus.index(results[0][0])        
-            for key, val in d[index].items():
-                if val:
-                    constrained_keys_list[0].append(key)
-                    if not value[key]: # update the value key if key is available in graph but not in model
-                        value[key] = val
-                    print("+++",value[key], key, val)
-            constrained_keys_list[0] = list(set(constrained_keys_list[0]))
-        else:
-            constrained_keys_list = []
+        if retriever:
+            query = ""
+            for key,val in value.items():
+                if key in constrained_keys_list[0]:
+                    query = query+f"{key}:{val} "
+            print("--query to BM 25", query)
+            results, scores = retriever.retrieve(bm25s.tokenize(query), k=1)
+            print(results, scores)
+            if scores[0][0]>1:
+                index = node_corpus.index(results[0][0])        
+                for key, val in d[index].items():
+                    if val:
+                        constrained_keys_list[0].append(key)
+                        if value[key] == "": # update the value key if key is available in graph but not in model
+                            value[key] = val
+                        print("+++",value[key], key, val)
+                constrained_keys_list[0] = list(set(constrained_keys_list[0]))
+  
+                # nodes = [hascaseanme:"session case bhavanisingh vs state", hascaseid:"1234/554",
+                #          hascaseanme:"chunturam vs state of chattisgarph", hascaseid:"513/2002",
+                #          hascaseanme:"lalsingh vs bsingh", hascaseid:"sxdc/ppoi",
+                #          ]
+
+                # value = hascaseanme:"chunturam vs state of chattisgarph", hascaseid:"",
+            else:
+                for node in d:
+                    print("-----", node)
+                    for cs_key in constrained_keys_list[0]:
+                        if node.get(cs_key) != None:
+                            if node[cs_key] == value[cs_key]:
+                                print("comes here")
+                                for key_v,val_v in value.items():
+                                    if val_v=='':
+                                        value[key_v] = node[key_v]
+                        
+                constrained_keys_list[0] = list(set(constrained_keys_list[0]))
+            
     # constrained_keys_list = constrained_keys_list
     # Step 2: Choose a constraint if available
     constrained_keys = None
@@ -369,6 +402,7 @@ def merge_node(tx, labels, value):
         # Now SET all the other properties (excluding merge keys)
         
         set_props = [k for k in value if k not in constrained_keys]
+        
         if set_props:
             set_clause = ", ".join(f"n.{k} = ${k}" for k in set_props)
             query += f"\nSET {set_clause}"
@@ -381,7 +415,7 @@ def merge_node(tx, labels, value):
         # No constraints — fallback to using all props
         props = ", ".join(f"{k}: ${k}" for k in value)
         query = f"MERGE (n{label_str} {{ {props} }})"
-        print(f"[{merge_node}] : no constraints, merging on all props")
+        print("[merge_node] : no constraints, merging on all props")
         tx.run(query, **value)
 
 def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, relationship):
@@ -433,7 +467,7 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
 
     # print("Query:\n", query)
     # print("Params:", params)
-
+    print(f"[merge_relationship] query: {query} params : {params}")
     tx.run(query, **params)
 
 
@@ -492,9 +526,6 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
                     print("[MODEL OUTPUT:]",dc)
                     return {"node1_dict":node1_dict,"node2_dict":node2_dict, "model_output":dc}
                     
-
-
-
 
 def get_nodes_and_rels(tx):
     query = """

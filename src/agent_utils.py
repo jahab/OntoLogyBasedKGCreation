@@ -222,7 +222,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 print("Relationship: ", model_output["relationship"])              
                               
         with config["configurable"]["context"]["neo4j_driver"].session() as session:
-            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
+            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}) ----->this is errorprone line
             session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
             session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
@@ -242,13 +242,15 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         previous_chunk_id = current_chunk_id
         records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
+        print("records from get_graph", get_graph)
         for res in records:
+            print("res====", res)
             if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
                 continue
             nodes_and_rels.append(res)
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
-        print(traceback.print_exc())
+        print("[extract nodes and rels]",traceback.print_exc())
         previous_chunk_id = ""
     return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
 

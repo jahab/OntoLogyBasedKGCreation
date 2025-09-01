@@ -1,2 +1,2 @@
-FROM neo4j:latest
+FROM neo4j:2025.07.1-community-ubi9
 RUN wget https://github.com/neo4j-labs/neosemantics/releases/download/5.20.0/neosemantics-5.20.0.jar -P /plugins
