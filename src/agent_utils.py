@@ -229,8 +229,8 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
                                                         "hasParagraph")
             
-            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
-            if state.get("previous_chunk_id",None) is not None:
+            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}") ----> This is creating problem. Chunks are sef telling it is previous or next
+            if state.get("previous_chunk_id",None) != None:
                 print("================Connecting the chunk=================")
                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
                                                         ["Paragraph"], {"chunk_id":current_chunk_id},
@@ -243,7 +243,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         previous_chunk_id = current_chunk_id
         records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
-        print(f"records from get_graph {get_graph}")
+        # print(f"records from get_graph {get_graph}")
         for res in records:
             print(f"res==== {res}")
             if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
@@ -252,7 +252,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
         print("[extract nodes and rels]",traceback.print_exc())
-        previous_chunk_id = ""
+        previous_chunk_id = None
     return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
 
 

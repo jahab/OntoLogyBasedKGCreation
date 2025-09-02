@@ -421,7 +421,7 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     def format_labels(label):
         return ":" + ":".join(label) if isinstance(label, list) else f":{label}"
 
-    print(node1_type, node1_value, node2_type, node2_value, relationship)
+    print(f"{node1_type} {node1_value} {node2_type} {node2_value} {relationship}")
     node1_label_str = format_labels(node1_type)
     node2_label_str = format_labels(node2_type)
     print(f"{node1_label_str} { node2_label_str}")
@@ -460,6 +460,12 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     # WHERE {where_clause}
     props1 = ", ".join(f"{k}: ${k}" for k in node1_value)
     props2 = ", ".join(f"{k}: ${k}" for k in node2_value)
+    
+    # TODO: FIXME: This needs to change 
+    # props1:{"chunk_id":"qaws"}
+    # props2:{"chunk_id":"edrftg"}
+    # params = {**node1_value, **node2_value} = {"chunk_id":"edrftg"} -->this is like merge my argument. and two arguments cannot be same 
+    
     query = f"""
     MATCH (n1{node1_label_str} {{{props1}}}) 
     MATCH (n2{node2_label_str} {{{props2}}})
