@@ -18,16 +18,10 @@ class CaseMetadataParser(BaseModel):
     hasCaseID:str = Field(description = "This is Case number. For Example: Criminal Appeal No. 1392 of 2011/ Criminal Appeal Nos. 1864-1865 of 2010/ SLP(C) No. 000242 - 000284 / 2014 Registered on 24-11-2014/ CIVIL APPEAL NO. 17308 OF 2017")
     hasCourtName:str = Field(description = "Name of the Court. Example: Supreme Court of India/ High Court of Madhya Pradesh/ Disctrict Coutr of Udaipur")
     hasCaseName:str = Field(description= """
-                          Name of the case. Each Example separated by a /: CHUNTHURAM v.
-                                                    STATE OF CHHATTISGARH / 
-                                                    Sajid Khan v. 
-                                                    L Rahmathullah & Ors. / 
-                                                    STATE OF U.P. ...APPELLANT(S) 
-                                                    VERSUS 
-                                                    GAYATRI PRASAD PRAJAPATI ...RESPONDENT(S) / 
-                                                    M. Ravindran   ...Appellant
-                                                    Versus
-                                                    The Intelligence Officer, Directorate of Revenue Intelligence  …Respondent
+                          Name of the case. Each Example separated by a /: Chunthuram Versus State of Chhattisgarh / 
+                                                    Sajid Khan v. L Rahmathullah & Ors. / 
+                                                    State of U.P. Versus Gayatri Prasad Prajapati / 
+                                                    M. Ravindran Versus The Intelligence Officer, Directorate of Revenue Intelligence
                                                     """
                           )
 

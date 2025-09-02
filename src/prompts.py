@@ -198,7 +198,7 @@ Individual is an EntityType and not EntityValue.
 
 ### Example on how to extract entities:
 For the sentence:  
-*“Hrushikesh Roy presided over madras high court and delivered the Judgement of setencing person A to a fine of 50000 INR in case CR/1987/11 under section 41 of CrPC on date 23 May 2023”*
+*“Hrushikesh Roy presided over madras high court and delivered the Judgement of setencing person A to a fine of 50000 INR in case CR/1987/11 under section 41 of CrPC on date 23 May 2023 citing Civil Rule No.8574 (w) of 1983 as precedent.”*
 
 Return only valid JSON. Do not wrap your output in markdown or text formatting.
 Output:
@@ -214,8 +214,7 @@ Output:
         "courtName": "madras high court"
       }},
       "relationship": "hasRulingOf"
-    }},
-    
+    }}, 
     {{
       "node1_type": "CourtCase",
       "node1_value": {{
@@ -228,8 +227,17 @@ Output:
       }},
       "relationship": "hasJudge"
     }},
-    
-    
+    {{
+      "node1_type":"CourtCase",
+      "node1_value": {{
+        "hasCaseID": "CR/1987/11"
+      }},
+      "node2_type":"CourtCase",
+      "node2_value": {{
+        "hasCaseID": "Civil Rule No.8574 (w) of 1983"
+      }},
+      "relationship": "cited"
+    }},
     {{
       "node1_type": "Judge",
       "node1_value": {{

@@ -124,7 +124,7 @@ def init_context(data):
 
 def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
-    print("===========Case metadata:", case_metadata)
+    print(f"===========Case metadata: {case_metadata}")
     nodes_and_rels = []
     for item in case_metadata:
         node1_type = item.node1_type
@@ -160,7 +160,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
         )
     meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
     metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
-    print("[CASEMETA] : ",metadata.content)
+    print(f"[CASEMETADATA] : {metadata.content}")
     
     case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
     courtcase_extract_template = ChatPromptTemplate(
@@ -169,7 +169,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
         )
     case_extraction_chain = courtcase_extract_template | config["configurable"]["context"]["extraction_model"] | case_metadata_parser
     case_extract =  case_extraction_chain.invoke({"text": state["chunk"]})
-       
+    print(f"case_extract : {case_extract}")
     return {"case_metadata":metadata.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
 
 def get_models(model_provider: str, embedding_provider:str, embedding_model: str, chat_model: str):
@@ -217,18 +217,19 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
             except Exception as e:
                 print(traceback.print_exc())
                 print("----------------------------------------------------------------------------------")
-                print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
-                print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
-                print("Relationship: ", model_output["relationship"])              
+                print(f"Node1: {resp["node1_dict"]["labels"]}, props: {model_output["node1_property"]}")
+                print(f"Node2: {resp["node2_dict"]["labels"]}, props: { model_output["node2_property"]}")
+                print(f"Relationship: {model_output["relationship"]}")
                               
         with config["configurable"]["context"]["neo4j_driver"].session() as session:
-            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}) ----->this is errorprone line
+            print(f"STATE: {state}")
+            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
             session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
             session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
                                                         "hasParagraph")
             
-            print("======previous_chunk_id", state.get("previous_chunk_id",None))
+            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
             if state.get("previous_chunk_id",None) is not None:
                 print("================Connecting the chunk=================")
                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
@@ -242,10 +243,10 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         previous_chunk_id = current_chunk_id
         records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
-        print("records from get_graph", get_graph)
+        print(f"records from get_graph {get_graph}")
         for res in records:
-            print("res====", res)
-            if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
+            print(f"res==== {res}")
+            if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
                 continue
             nodes_and_rels.append(res)
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 

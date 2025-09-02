@@ -328,7 +328,7 @@ def merge_node(tx, labels, value):
     retriever = None
     # Step 1: Check for node key constraint
     constrained_keys_list = get_constraints_for_label(tx, label)
-    print("=constrained_keys_list=",constrained_keys_list)
+    print(f"=constrained_keys_list= {constrained_keys_list}")
     node_corpus = []
     if constrained_keys_list:
         d = get_nodes_by_label(tx, label)
@@ -343,7 +343,7 @@ def merge_node(tx, labels, value):
             node_corpus.append(tmp_str) 
         # this contains the information of all nodes based on a given a label
         # ["CourtCase1 - properties", "CourtCase2 - properties" ..]
-        print("node_corpus", node_corpus)
+        print(f"node_corpus {node_corpus}")
         if node_corpus:
             retriever = bm25s.BM25(corpus=node_corpus)
             retriever.index(bm25s.tokenize(node_corpus))
@@ -353,9 +353,9 @@ def merge_node(tx, labels, value):
             for key,val in value.items():
                 if key in constrained_keys_list[0]:
                     query = query+f"{key}:{val} "
-            print("--query to BM 25", query)
+            print(f"--query to BM 25: {query}")
             results, scores = retriever.retrieve(bm25s.tokenize(query), k=1)
-            print(results, scores)
+            print(f"{results} {scores}")
             if scores[0][0]>1:
                 index = node_corpus.index(results[0][0])        
                 for key, val in d[index].items():
@@ -363,7 +363,7 @@ def merge_node(tx, labels, value):
                         constrained_keys_list[0].append(key)
                         if value[key] == "": # update the value key if key is available in graph but not in model
                             value[key] = val
-                        print("+++",value[key], key, val)
+                        print(f"+++ {value[key]},  {key},  {val}")
                 constrained_keys_list[0] = list(set(constrained_keys_list[0]))
   
                 # nodes = [hascaseanme:"session case bhavanisingh vs state", hascaseid:"1234/554",
@@ -374,7 +374,7 @@ def merge_node(tx, labels, value):
                 # value = hascaseanme:"chunturam vs state of chattisgarph", hascaseid:"",
             else:
                 for node in d:
-                    print("-----", node)
+                    print(f"----- {node}")
                     for cs_key in constrained_keys_list[0]:
                         if node.get(cs_key) != None:
                             if node[cs_key] == value[cs_key]:
@@ -393,7 +393,7 @@ def merge_node(tx, labels, value):
             constrained_keys = keys
             break
 
-    print("constrained_keys",constrained_keys)
+    print(f"constrained_keys {constrained_keys}")
     if constrained_keys:
         # Use only constraint keys in MERGE
         merge_props = ", ".join(f"{k}: ${k}" for k in constrained_keys)
@@ -408,7 +408,6 @@ def merge_node(tx, labels, value):
             query += f"\nSET {set_clause}"
 
         print(f"[merge_node:] using constraint keys: {constrained_keys}")
-        print(query)
         tx.run(query, **value)
 
     else:
@@ -422,48 +421,53 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     def format_labels(label):
         return ":" + ":".join(label) if isinstance(label, list) else f":{label}"
 
+    print(node1_type, node1_value, node2_type, node2_value, relationship)
     node1_label_str = format_labels(node1_type)
     node2_label_str = format_labels(node2_type)
-
+    print(f"{node1_label_str} { node2_label_str}")
     # Build node1 match
-    node1_params = {}
-    if isinstance(node1_value, dict):
-        node1_match = " AND ".join(f"n1.{k} = ${k}1" for k in node1_value)
-        for k, v in node1_value.items():
-            node1_params[f"{k}1"] = v
-    else:
-        key = f"{node1_type[-1].lower()}Name" if isinstance(node1_type, list) else f"{node1_type.lower()}Name"
-        node1_match = f"n1.{key} = $node1_value"
-        node1_params["node1_value"] = node1_value
+    # node1_params = {}
+    # if isinstance(node1_value, dict):
+    #     node1_match = " AND ".join(f"n1.{k} = ${k}1" for k in node1_value)
+    #     for k, v in node1_value.items():
+    #         node1_params[f"{k}1"] = v
+    # else:
+    #     key = f"{node1_type[-1].lower()}Name" if isinstance(node1_type, list) else f"{node1_type.lower()}Name"
+    #     node1_match = f"n1.{key} = $node1_value"
+    #     node1_params["node1_value"] = node1_value
 
-    # Build node2 match
-    node2_params = {}
-    if isinstance(node2_value, dict):
-        node2_match = " AND ".join(f"n2.{k} = ${k}2" for k in node2_value)
-        for k, v in node2_value.items():
-            node2_params[f"{k}2"] = v
-    else:
-        key = f"{node2_type[-1].lower()}Name" if isinstance(node2_type, list) else f"{node2_type.lower()}Name"
-        node2_match = f"n2.{key} = $node2_value"
-        node2_params["node2_value"] = node2_value
+    # # Build node2 match
+    # node2_params = {}
+    # if isinstance(node2_value, dict):
+    #     node2_match = " AND ".join(f"n2.{k} = ${k}2" for k in node2_value)
+    #     for k, v in node2_value.items():
+    #         node2_params[f"{k}2"] = v
+    # else:
+    #     key = f"{node2_type[-1].lower()}Name" if isinstance(node2_type, list) else f"{node2_type.lower()}Name"
+    #     node2_match = f"n2.{key} = $node2_value"
+    #     node2_params["node2_value"] = node2_value
 
+    # print("=========",node1_match, node2_match)
     # Combine WHERE clause safely
-    where_clauses = []
-    if node1_match:
-        where_clauses.append(node1_match)
-    if node2_match:
-        where_clauses.append(node2_match)
+    # where_clauses = []
+    # if node1_match:
+    #     where_clauses.append(node1_match)
+    # if node2_match:
+    #     where_clauses.append(node2_match)
 
-    where_clause = " AND ".join(where_clauses)
+    # where_clause = " AND ".join(where_clauses)
 
+    # WHERE {where_clause}
+    props1 = ", ".join(f"{k}: ${k}" for k in node1_value)
+    props2 = ", ".join(f"{k}: ${k}" for k in node2_value)
     query = f"""
-    MATCH (n1{node1_label_str}), (n2{node2_label_str})
-    WHERE {where_clause}
+    MATCH (n1{node1_label_str} {{{props1}}}) 
+    MATCH (n2{node2_label_str} {{{props2}}})
     MERGE (n1)-[r:{relationship}]->(n2)
     """
 
     # Merge all parameters
-    params = {**node1_params, **node2_params}
+    params = {**node1_value, **node2_value}
 
     # print("Query:\n", query)
     # print("Params:", params)
@@ -498,7 +502,6 @@ def merged_node_with_label_and_prop(driver,node:str)->dict:
 
 
 def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, node2_type,  node2_value):
-    invalid_relation = False
     if relationship == "is_a":
         # Check if the extracted node is a valid subclass or not. If not then return with valid sublassing
         node1_type, node2_type, node1_value, node2_value,invalid_node = refine_parent_child_relation(driver, node1_type,node2_type,node1_value,node2_value,relationship)
@@ -510,20 +513,20 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
     node1_dict = merged_node_with_label_and_prop(driver, node1_type) # {'properties': {'COLastName': '', 'COFirstName': ''},'labels': ['Judge', 'Court_Official']}
     node2_dict = merged_node_with_label_and_prop(driver, node2_type)
     # check if a valid relationship exists in ontology for between these node types
-    print("[some_func_v2]\n", "node1_dict:",node1_dict, "\n","node2_dict:",node2_dict)
+    print(f"[some_func_v2]:\n node1_dict: {node1_dict} \n node2_dict: {node2_dict}")
     for label_1 in node1_dict['labels']:
         for label_2 in node2_dict['labels']:
             with driver.session() as session:
                 edges = session.execute_read(check_valid_relationship, label_1, relationship, label_2) 
                 for e in edges:
-                    print("[TRIPLE in FUNC:]",node1_type,node1_dict["properties"], e["r"]["n4sch__name"], node2_type, node2_dict["properties"])
-                    print("[TRIPLE TO EXTRACT:]",e["n1"]["n4sch__name"],node1_dict["properties"], node1_value, e["r"]["n4sch__name"], e["n2"]["n4sch__name"], node2_dict["properties"], node2_value)
+                    print(f"[TRIPLE in FUNC:] {node1_type},  {node1_dict["properties"]}, {e["r"]["n4sch__name"]}, {node2_type}, {node2_dict["properties"]}")
+                    print(f"[TRIPLE TO EXTRACT:] {e["n1"]["n4sch__name"]}, {node1_dict["properties"]}, {node1_value}, {e["r"]["n4sch__name"]}, {e["n2"]["n4sch__name"]}, {node2_dict["properties"]}, {node2_value}")
                     dc = prop_ex_chain.invoke({"node1_type": node1_type, "node2_type": node2_type,
                                        "relationship":relationship, 
                                        "node1_value":node1_value, "node2_value":node2_value,
                                        "node1_property":json.dumps(node1_dict["properties"]), "node2_property":json.dumps(node2_dict["properties"]),
                                        })
-                    print("[MODEL OUTPUT:]",dc)
+                    print(f"[MODEL OUTPUT:] {dc}")
                     return {"node1_dict":node1_dict,"node2_dict":node2_dict, "model_output":dc}
                     
 
