@@ -322,6 +322,9 @@ def get_nodes_by_label(tx, label):
 # Need a fall back mechanism on using local embeddings. Or find a way to merge the query --> Fixed but flaky
 
 def merge_node(tx, labels, value):
+    for key,val in value.items():
+        if val is None:
+            value[key] = ""
     # Handle single or multiple labels
     label_str = ":" + ":".join(labels) if isinstance(labels, list) else f":{labels}"
     label = labels[0] if isinstance(labels, list) else labels
@@ -351,6 +354,8 @@ def merge_node(tx, labels, value):
         if retriever:
             query = ""
             for key,val in value.items():
+                if val == None:
+                    val = ""
                 if key in constrained_keys_list[0]:
                     query = query+f"{key}:{val} "
             print(f"--query to BM 25: {query}")
@@ -408,6 +413,9 @@ def merge_node(tx, labels, value):
             query += f"\nSET {set_clause}"
 
         print(f"[merge_node:] using constraint keys: {constrained_keys}")
+        for key,val in value.items():
+            if val is None:
+                value[key] = ""
         tx.run(query, **value)
 
     else:
@@ -458,8 +466,8 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     # where_clause = " AND ".join(where_clauses)
 
     # WHERE {where_clause}
-    props1 = ", ".join(f"{k}: ${k}" for k in node1_value)
-    props2 = ", ".join(f"{k}: ${k}" for k in node2_value)
+    props1 = ", ".join(f"{k}: $n1_{k}" for k in node1_value)
+    props2 = ", ".join(f"{k}: $n2_{k}" for k in node2_value)
     
     # TODO: FIXME: This needs to change 
     # props1:{"chunk_id":"qaws"}
@@ -467,13 +475,23 @@ def merge_relationship(tx, node1_type, node1_value, node2_type, node2_value, rel
     # params = {**node1_value, **node2_value} = {"chunk_id":"edrftg"} -->this is like merge my argument. and two arguments cannot be same 
     
     query = f"""
-    MATCH (n1{node1_label_str} {{{props1}}}) 
-    MATCH (n2{node2_label_str} {{{props2}}})
-    MERGE (n1)-[r:{relationship}]->(n2)
+        MATCH (n1{node1_label_str} {{{props1}}}) 
+        MATCH (n2{node2_label_str} {{{props2}}})
+        MERGE (n1)-[r:{relationship}]->(n2)
     """
-
+    params = {}
+    for k, v in node1_value.items():
+        if v is None:
+            params[f"n1_{k}"] = ""
+        else:
+            params[f"n1_{k}"] = v
+    for k, v in node2_value.items():
+        if v is None:
+            params[f"n2_{k}"] = ""
+        else:
+            params[f"n2_{k}"] = v
     # Merge all parameters
-    params = {**node1_value, **node2_value}
+    # params = {**node1_value, **node2_value}
 
     # print("Query:\n", query)
     # print("Params:", params)

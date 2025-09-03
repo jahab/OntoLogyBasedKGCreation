@@ -484,6 +484,7 @@ Your job is to:
 - When multiple cases are mentioned using "WITH" or "AND," the first case mentioned should be considered the primary case, and all subsequent cases should be considered "cited" by the primary case. Each case mentioned in these clauses should be extracted as a CourtCase entity with its own hasCaseID.
 - If you are unsure of any entity ot its properties then do not extract it. It is important that you do not hallucinate and do not give false or unverifiable information.
 - Output the triples in JSON format
+- Do not add any new information on your own.
 
 ### Schema
 

@@ -5,11 +5,15 @@ from langchain_community.chat_models import  ChatAnthropic
 from sentence_transformers import SentenceTransformer
 import enum
 import pymongo
+from dotenv import load_dotenv
+load_dotenv()
 
 EMBEDDING_MAP = {
     "openai": lambda model: OpenAIEmbeddings(model=model),
     "google": lambda model: GoogleGenerativeAIEmbeddings(model=model)
 }
+
+output_fixer_model = ChatGoogleGenerativeAI(model = "gemini-2.5-flash")
 
 CHAT_MODEL_MAP = {
     "openai": lambda model: ChatOpenAI(model=model),
@@ -18,6 +22,6 @@ CHAT_MODEL_MAP = {
 }
 
 USER_QUEUE = {"user_id": [], "task_id":[]} #TODO: FIXME: CRITICAL: Need a mutex on this queue other wise use mongo DB fro polling
-
+RETRY_LIMIT = 3
 myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mongo_db = myclient["db"]

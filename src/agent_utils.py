@@ -191,7 +191,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
         resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
-        # print(resp.content)
+        print(resp.content)
         triples = config["configurable"]["context"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)
         print("=============================================================")
@@ -229,7 +229,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                                                         ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
                                                         "hasParagraph")
             
-            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}") ----> This is creating problem. Chunks are sef telling it is previous or next
+            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
             if state.get("previous_chunk_id",None) != None:
                 print("================Connecting the chunk=================")
                 session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
