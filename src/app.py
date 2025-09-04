@@ -1,9 +1,7 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.graphs.graph_document import GraphDocument
 from langchain_core.documents import Document
-from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain.docstore.document import Document
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -22,45 +20,13 @@ from output_parser import *
 from neo4j import GraphDatabase
 import uuid
 import traceback
-# from mem0 import MemoryClient
 from refine_nodes import *
-
-
-
-# def retrieve_context(query: str, user_id: str) -> List[Dict]:
-#     """Retrieve relevant context from Mem0"""
-#     memories = mem0.search(query, user_id=user_id)
-#     seralized_memories = ' '.join([mem["memory"] for mem in memories])
-#     context = [
-#         { 
-#             "content": f"Relevant information: {seralized_memories}"
-#         },
-#         {
-#             "role": "user",
-#             "content": query
-#         }
-#     ]
-#     return context
-
-# def save_interaction(user_id: str, user_input: str, assistant_response: str):
-#     """Save the interaction to Mem0"""
-#     interaction = [
-#         {
-#           "role": "user",
-#           "content": user_input
-#         },
-#         {
-#             "role": "assistant",
-#             "content": assistant_response
-#         }
-#     ]
-#     mem0.add(interaction, user_id=user_id)
-
+import json
 
 if __name__ == "__main__":
     load_dotenv()
-    uri = "bolt://neo4j:7687"
-    vector_db_uri = "http://vector_db:6333"
+    uri = "bolt://0.0.0.0:7687"
+    vector_db_uri = "http://0.0.0.0:6333"
     os.environ["NEO4j_USER_NAME"] = os.getenv("NEO4j_USER_NAME")
     os.environ["NEO4j_PWD"] = os.getenv("NEO4j_PWD")
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
@@ -72,34 +38,19 @@ if __name__ == "__main__":
 
     #create_constraint
     create_constraint(driver)
+    create_index(driver)
     
     #read the Document
-    file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf")
-    loader = PyPDFLoader(file_path)
-    pages = []
-    text = ""
-
-    for page in loader.lazy_load():
-        pages.append(page)
-        text = text+"\n"+page.page_content
-    
+    file_path = ("35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf")
+    text = read_document(file_path)
     doc =  Document(page_content=text, metadata={"source": "local"})
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=20)
-
-    text_chunks = text_splitter.split_text(text)    
-
-    case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
-    metadata_extract_template = ChatPromptTemplate(
-        messages = [("system", METADATA_EXTRACTION_PROMPT),("user","{text}") ],
-        partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
-    )
+    
+    text_chunks = chunk_pdf(text)
     
     model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     # model = ChatOpenAI(model="gpt-4.1")
-    meta_extraction_chain = metadata_extract_template | model | case_metadata_parser
-    case_metadata = meta_extraction_chain.invoke({"text":text_chunks[0]})
-    print("===========Case metadata:", case_metadata)
+    
+    
     
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
@@ -108,7 +59,7 @@ if __name__ == "__main__":
         partial_variables={"format_instructions": KG_extraction_parser.get_format_instructions()}
     )
     # print(prompt_template)
-    jsondata = []
+    
     KG_extraction_chain = prompt_template | model
 
     prop_extraction_parser = JsonOutputParser(pydantic_object=NodeDictParser)
@@ -118,15 +69,48 @@ if __name__ == "__main__":
     )
     prop_extraction_chain = prop_extract_template | model | prop_extraction_parser
     
-    count = 0
     context = ""
     previous_chunk_id = None
     nodes_and_rels = ""
+    
+    case_metadata = extract_case_metadata(model,text_chunks[0])
+    print("===========Case metadata:", case_metadata)
+    
+    for item in case_metadata:
+        node1_type = item.node1_type
+        node2_type = item.node2_type
+        node1_value = item.node1_value
+        node2_value = item.node2_value
+        relationship = item.relationship
+        try:
+            resp = some_func_v2(driver, prop_extraction_chain, node1_type, node1_value, relationship, node2_type,  node2_value)
+            if resp:
+                model_output = resp["model_output"]
+                # print(model_output)
+                with driver.session() as session:
+                    session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
+                    session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
+                    session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
+        except Exception as e:
+            print(traceback.print_exc())
+            print("----------------------------------------------------------------------------------")
+            print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
+            print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
+            print("Relationship: ", model_output["relationship"])              
+
+    records = get_graph(driver)
+    for res in records:
+        if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
+            continue
+        nodes_and_rels.append(res)
+    nodes_and_rels =  format_triples(nodes_and_rels)
+    
+    
     for text_chunk in text_chunks:
         try:
             # Generate Response
             current_chunk_id = str(uuid.uuid4())
-            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": case_metadata})
+            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": json.dumps(case_metadata)})
             # print(resp.content)
             triples = KG_extraction_parser.parse(resp.content)
             # print(triples)
@@ -179,20 +163,22 @@ if __name__ == "__main__":
             records = get_graph(driver)
             nodes_and_rels  = []
             for res in records:
-                if ":Paragraph" in res:
+                if "Paragraph" in res["source_label"]  or "Paragraph" in res["target_labels"]:
                     continue
                 nodes_and_rels.append(res)
+            nodes_and_rels =  format_triples(nodes_and_rels)
         except Exception as e:
             print(traceback.print_exc())
-    
+
     
 
     embedding_func = GoogleGenerativeAIEmbeddings
     embedding_model = "models/text-embedding-004"
-    vector_db = VectorDB(vector_db_uri,embedding_func,embedding_model)
+    embedding_instance = embedding_func(model = embedding_model)
+    vector_db = VectorDB(vector_db_uri,embedding_instance)
     vector_store = vector_db.create_collection("CourtCase")
     # create_vector_indices(driver, 768)
-    # create_all_node_embeddings(driver, embedding_func,embedding_model, vector_store)
+    create_all_node_embeddings(driver, embedding_instance, vector_store)
     refine_nodes = RefineNodes(driver, vector_store, model)
     refine_nodes.refine_nodes()
     

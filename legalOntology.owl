@@ -1277,7 +1277,7 @@ nyon:Metropolitian_Courts rdf:type owl:Class ;
                           rdfs:subClassOf nyon:IndianCourts ;
                           rdfs:comment "court for population more than 10 lakh city "@en ;
                           rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
-                          rdfs:label "Metropolitan Court"@en .
+                          rdfs:label "Metropolitan_Court"@en .
 
 
 ###  https://w3id.org/def/nyon#Munsif_Court
@@ -1285,7 +1285,7 @@ nyon:Munsif_Court rdf:type owl:Class ;
                   rdfs:subClassOf nyon:Courts_for_Civil ;
                   rdfs:comment "lowest court in heirarchy for civil ases at district level after Principal Junior Civil Court"@en ;
                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
-                  rdfs:label "Munsif Court"@en .
+                  rdfs:label "Munsif_Court"@en .
 
 
 ###  https://w3id.org/def/nyon#ObiterDictum
@@ -1293,7 +1293,7 @@ nyon:ObiterDictum rdf:type owl:Class ;
                   rdfs:subClassOf <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Paragraph> ;
                   rdfs:comment "additional obersvations, remarks, and opinions made by the judge that are not the part of the reason for the decision"@en ;
                   rdfs:isDefinedBy "https://w3id.org/def/nyon#" ;
-                  rdfs:label "Obiter Dictum"@en .
+                  rdfs:label "ObiterDictum"@en .
 
 
 ###  https://w3id.org/def/nyon#Opinion

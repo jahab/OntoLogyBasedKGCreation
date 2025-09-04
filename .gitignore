@@ -1,5 +1,8 @@
 *.env
 *__pycache__*
+neo4j-data/
 neo4j/
 qdrant_storage/
 .vscode
+mongo-data/
+user-data/

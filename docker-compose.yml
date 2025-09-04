@@ -1,37 +1,84 @@
-version: "3.8"
 services:
   neo4j:
     build:
-      context: .
+      context: ./database
       dockerfile: Dockerfile.neo4j
+    container_name: neo4j
     volumes:
-      - $PWD/neo4j/logs:/logs
-      - $PWD/neo4j/config:/config
-      - $PWD/neo4j/data:/data
+      - $PWD/neo4j-data/logs:/logs
+      - $PWD/neo4j-data/config:/config
+      - $PWD/neo4j-data/data:/data
       # - $PWD/neo4j/plugins:/plugins
       # - /$HOME/neo4j/import:/var/lib/neo4j/import
     environment:
       - NEO4j_server_http_listen__address=0.0.0.0
       - NEO4J_AUTH=neo4j/admin@123
       - NEO4J_PLUGINS=["graph-data-science", "apoc"]
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,my.extensions.example,my.procedures.*,n10s.*
-      - NEO4J_dbms_security_procedures_allowlist=apoc.*,apoc.coll.*,apoc.load.*,gds.*,n10s.*
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,my.extensions.example,my.procedures.*,n10s.*,gds.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,apoc.coll.*,apoc.load.*,gds.*,n10s.*,gds.*
       - NEO4J_dbms_unmanaged__extension__classes=n10s.endpoint=/rdf
     ports:
       - "7474:7474"
       - "7687:7687"
     restart: always
+
   vector_db:
     image: qdrant/qdrant
+    container_name: qdrant
     ports:
       - "6333:6333"
       - "6334:6334"
     volumes:
       - $PWD/qdrant_storage:/qdrant/storage:z
+
   kg_app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: KG_app
+    ports:
+      - "4044:4044"
     depends_on:
       - neo4j
       - vector_db
+      - mongodb
+    volumes:
+      - $PWD/user-data:/data/
+
+  login-service:
+    build:
+      context: ./login
+      dockerfile: Dockerfile
+    container_name: login-app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - $PWD/user-data:/data/
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - $PWD/mongo-data:/data/db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8501:8501"
+      - "8502:8502"
+    volumes:
+      - $PWD/user-data:/data/

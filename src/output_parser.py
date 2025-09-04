@@ -2,9 +2,14 @@ from typing import Dict, Union, List
 import json
 import traceback
 import re
+from global_import import *
+
 from pydantic import BaseModel, Field
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
+from langchain.output_parsers import OutputFixingParser
+from langchain_core.exceptions import OutputParserException
+
 
 class NodeDictParser(BaseModel):
     node1_type: str = Field(description="node1_type")
@@ -18,16 +23,10 @@ class CaseMetadataParser(BaseModel):
     hasCaseID:str = Field(description = "This is Case number. For Example: Criminal Appeal No. 1392 of 2011/ Criminal Appeal Nos. 1864-1865 of 2010/ SLP(C) No. 000242 - 000284 / 2014 Registered on 24-11-2014/ CIVIL APPEAL NO. 17308 OF 2017")
     hasCourtName:str = Field(description = "Name of the Court. Example: Supreme Court of India/ High Court of Madhya Pradesh/ Disctrict Coutr of Udaipur")
     hasCaseName:str = Field(description= """
-                          Name of the case. Each Example separated by a /: CHUNTHURAM v.
-                                                    STATE OF CHHATTISGARH / 
-                                                    Sajid Khan v. 
-                                                    L Rahmathullah & Ors. / 
-                                                    STATE OF U.P. ...APPELLANT(S) 
-                                                    VERSUS 
-                                                    GAYATRI PRASAD PRAJAPATI ...RESPONDENT(S) / 
-                                                    M. Ravindran   ...Appellant
-                                                    Versus
-                                                    The Intelligence Officer, Directorate of Revenue Intelligence  …Respondent
+                          Name of the case. Each Example separated by a /: Chunthuram Versus State of Chhattisgarh / 
+                                                    Sajid Khan v. L Rahmathullah & Ors. / 
+                                                    State of U.P. Versus Gayatri Prasad Prajapati / 
+                                                    M. Ravindran Versus The Intelligence Officer, Directorate of Revenue Intelligence
                                                     """
                           )
 
@@ -50,6 +49,7 @@ class ListOfTriplesParser():
     def __init__(self, model_cls):
         self.model_cls = model_cls
         self.single_parser = PydanticOutputParser(pydantic_object=model_cls)
+        self.fix_parser = OutputFixingParser.from_llm(parser=self.single_parser, llm=output_fixer_model)
 
     def get_format_instructions(self) -> str:
         # Tell the LLM to return a JSON list of NodeTriple objects
@@ -62,15 +62,28 @@ class ListOfTriplesParser():
         # Assume output is a JSON array of objects
         try:
             text = strip_markdown_json(text)
-            items = json.loads(text)["Data"]
-            # print(*items)
+            items = json.loads(text)
+            if isinstance(items, dict) and "Data" in items:
+                items = items["Data"]
+            elif isinstance(items, list):
+                print("Items is a list LLM did mistake However parsing now as list")
             ls = []
             for item in items:
-                ls.append(self.model_cls(**item))
+                try:
+                    triple = self.model_cls(**item)
+                except OutputParserException as e:
+                    for _ in range(RETRY_LIMIT):
+                        try:
+                            print(f"Fixing output parser {item}")
+                            triple = self.fix_parser.parse("{}".format(item))
+                            break
+                        except:
+                            pass
+                ls.append(triple)
             return ls
             # return [self.model_cls(**item) for item in items]
         except Exception as e:
-            raise ValueError(f"Could not parse LLM output as list of triples: {traceback.format_exc()}")
+            raise ValueError(f"Could not parse LLM output as list of triples: {traceback.format_exc()} \n LLMresponse {text}")
 
 
 
