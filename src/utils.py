@@ -769,7 +769,6 @@ def get_node_property(driver, node:str)->dict:
 
 
 def create_node_embedding(driver,record, embedding_model, recreate_embedding:bool = False, vector_store:QdrantVectorStore=None):
-    
     node_label = list(record.labels)[0]
     node_prop = list(record.keys())
     embedding_node_property = "embedding"
@@ -777,47 +776,52 @@ def create_node_embedding(driver,record, embedding_model, recreate_embedding:boo
         node_prop.remove(embedding_node_property)
     def get_node_properties(tx, props):
         if recreate_embedding:
-            fetch_query = (
-                f"MATCH (n) "
-                f"WHERE elementId(n)='{record.element_id}' "
-                f"AND n.{embedding_node_property} IS NOT null "
-                "AND any(k in $props WHERE n[k] IS NOT null) "
-                f"RETURN elementId(n) AS id, n, " 
-                "reduce(str = '', k IN $props | "
-                "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
-                "THEN str + '\\n' + k + ':' + toString(n[k]) "
-                "ELSE str END) AS text "
-                )
+            fetch_query = f"""
+                            MATCH (n)
+                            WHERE elementId(n)='{record.element_id}'
+                              AND n.{embedding_node_property} IS NOT null
+                              AND any(k in $props WHERE n[k] IS NOT null)
+                            RETURN elementId(n) AS id, n,
+                            reduce(str = '', k IN $props |
+                                CASE
+                                  WHEN n[k] IS NOT null AND toString(n[k]) <> ''
+                                  THEN str + '\\n' + k + ':' + toString(n[k])
+                                  ELSE str
+                                END
+                            ) AS text
+                            """
         else: 
-            fetch_query = (
-                f"MATCH (n) "
-                f"WHERE elementId(n)='{record.element_id}' "
-                f"AND n.{embedding_node_property} IS null "
-                "AND any(k in $props WHERE n[k] IS NOT null) "
-                f"RETURN elementId(n) AS id, n, " 
-                "reduce(str = '', k IN $props | "
-                "CASE WHEN n[k] IS NOT null AND toString(n[k]) <> '' "
-                "THEN str + '\\n' + k + ':' + toString(n[k]) "
-                "ELSE str END) AS text "
-                )
+            fetch_query = f"""
+                            MATCH (n)
+                            WHERE elementId(n)='{record.element_id}'
+                              AND n.{embedding_node_property} IS null
+                              AND any(k in $props WHERE n[k] IS NOT null)
+                            RETURN elementId(n) AS id, n,
+                            reduce(str = '', k IN $props |
+                                CASE
+                                  WHEN n[k] IS NOT null AND toString(n[k]) <> ''
+                                  THEN str + '\\n' + k + ':' + toString(n[k])
+                                  ELSE str
+                                END
+                            ) AS text
+                            """
             
         return list(tx.run(fetch_query, props=props))
 
     def update_text_embedding(tx, data):
-        query = (
-                    "UNWIND $data AS row "
-                    f"MATCH (n:`{node_label}`) "
-                    "WHERE elementId(n) = row.id "
-                    f"CALL db.create.setNodeVectorProperty(n, "
-                    f"'{embedding_node_property}', row.embedding) "
-                    "RETURN count(*)"
-                )
+        query = f"""
+                    UNWIND $data AS row
+                    MATCH (n:`{node_label}`)
+                    WHERE elementId(n) = row.id
+                    CALL db.create.setNodeVectorProperty(n, '{embedding_node_property}', row.embedding)
+                    RETURN count(*)
+                """
         tx.run(query, data=data)
 
 
     with driver.session() as session:
         ds = session.execute_read(get_node_properties,node_prop)
-    print("=======", ds)
+    print(f"======= {ds}")
     if not ds:
         return
     if vector_store is None: # If vector DB instance is not provided then use the default neo4j instance to store embeddings
@@ -832,10 +836,21 @@ def create_node_embedding(driver,record, embedding_model, recreate_embedding:boo
             ds = session.execute_write(update_text_embedding, data = params["data"])
         return
     
-    
-    vector_store.add_texts(texts = ["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds], 
-                       metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
-
+    try:
+        vector_store.add_texts(texts = ["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds], 
+                        metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
+        
+        query = """
+            MATCH (n)
+            WHERE elementId(n) = $element_id
+            SET n.embedding = true
+            RETURN n
+            """
+        with driver.session() as session:
+            result = session.run(query, element_id=record.element_id)
+    except Exception as e:
+        print(f"==== vector creation failed ====")
+        pass
 
 def create_all_node_embeddings(driver, embedding_model, vector_store):
     query = """
@@ -851,7 +866,7 @@ def create_all_node_embeddings(driver, embedding_model, vector_store):
     with driver.session() as session:
         result = session.run(query)
         for record in result:
-            create_node_embedding(driver,record["n"],embedding_model, False, vector_store)
+            create_node_embedding(driver,record["n"],embedding_model,recreate_embedding = False, vector_store = vector_store)
 
 
 def read_document(file_path:str):

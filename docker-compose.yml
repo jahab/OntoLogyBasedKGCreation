@@ -16,7 +16,8 @@ services:
       - NEO4J_PLUGINS=["graph-data-science", "apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,my.extensions.example,my.procedures.*,n10s.*,gds.*
       - NEO4J_dbms_security_procedures_allowlist=apoc.*,apoc.coll.*,apoc.load.*,gds.*,n10s.*,gds.*
-      - NEO4J_dbms_unmanaged__extension__classes=n10s.endpoint=/rdf
+      # - NEO4J_dbms_unmanaged__extension__classes=n10s.endpoint=/rdf
+      - NEO4_server_unmanaged___extension__classes=n10s.endpoint=/rdf
     ports:
       - "7474:7474"
       - "7687:7687"
