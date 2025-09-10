@@ -4,12 +4,12 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from qdrant_client import models
 from broker import ask
 class RefineNodes:
-    def __init__(self, driver, vector_db_cli, vector_store, coll_name, model):
+    def __init__(self, driver, vector_db_client, vector_store, coll_name, model):
         self.driver = driver
         self.vector_store = vector_store
         self.threshold = 0.6
         self.model = model
-        self.vector_db_cli = vector_db_cli
+        self.vector_db_client = vector_db_client
         self.collection_name = coll_name
         self.create_prompt_template()
 
@@ -81,7 +81,7 @@ class RefineNodes:
                             ret_val = merge_by_id(self.driver, n[0].metadata["element_id"], unique_nodes[i].element_id)
                             if ret_val:
                                 self.vector_store.delete(ids = [n[0].metadata["_id"]])
-                                self.vector_db_cli.delete(points=models.Filter(
+                                self.vector_db_client.delete(points=models.Filter(
                                     must=[
                                         models.FieldCondition(
                                                 key="metadata.element_id", 

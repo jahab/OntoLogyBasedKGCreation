@@ -90,7 +90,8 @@ def init_context(data):
     driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
     vector_store = vector_db.create_collection("CourtCase")
-    
+    # vector_store = vec_ins["vector_store"]
+    # vec_cli = vec_ins["vector_client"]
     
     KG_extraction_parser = ListOfTriplesParser(NodeTriple)
     prompt_template = ChatPromptTemplate(
@@ -110,7 +111,7 @@ def init_context(data):
     return {"extraction_model":extraction_model,
             "embedding_model":embedding_instance, 
             "vector_store":vector_store, 
-            "vector_db_cli":vector_db,
+            "vector_db_client":vector_db.client,
             "vector_db_collection_name":"CourtCase",
             "neo4j_driver":driver,
             "KG_extraction_parser":KG_extraction_parser, 
@@ -141,7 +142,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
                     session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                     session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
         except Exception as e:
-            print(traceback.print_exc())
+            print(f"[extract_case_metadata_ag]: {traceback.format_exc()}")
             print("----------------------------------------------------------------------------------")            
 
     records = get_graph(config["configurable"]["context"]["neo4j_driver"])
@@ -176,8 +177,17 @@ def get_models(model_provider: str, embedding_provider:str, embedding_model: str
     model_provider = model_provider.lower()
     embedding_provider = embedding_provider.lower()
     try:
-        embedding_instance = EMBEDDING_MAP[embedding_provider](embedding_model)
+        if embedding_provider=="gemma" and embedding_model =="google/embeddinggemma-300M":
+            import torch
+            from sentence_transformers import SentenceTransformer
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            model_id = embedding_model #"google/embeddinggemma-300M"
+            embedding_instance = SentenceTransformer(model_id).to(device=device)
+        else:
+            embedding_instance = EMBEDDING_MAP[embedding_provider](embedding_model)
+    
         chat_instance = CHAT_MODEL_MAP[model_provider](chat_model)
+        
         return embedding_instance, chat_instance
     except KeyError:
         raise ValueError(f"Unsupported provider: {traceback.format_exc()}")
@@ -215,7 +225,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                         session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                         session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
             except Exception as e:
-                print(traceback.print_exc())
+                print(f"\n[extract_nodes_rels]: {traceback.format_exc()}")
                 print("----------------------------------------------------------------------------------")
                 print(f"Node1: {resp["node1_dict"]["labels"]}, props: {model_output["node1_property"]}")
                 print(f"Node2: {resp["node2_dict"]["labels"]}, props: { model_output["node2_property"]}")
@@ -251,14 +261,14 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
             nodes_and_rels.append(res)
         writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     except Exception as e:
-        print("[extract nodes and rels]",traceback.print_exc())
+        print(f"\n[extract_nodes_rels]: {traceback.format_exc()}")
         previous_chunk_id = None
     return {"nodes_and_rels":nodes_and_rels, "previous_chunk_id":previous_chunk_id}
 
 
 def refine_nodes(state:KGBuilderState, config: RunnableConfig):
     refine_nodes = RefineNodes(config["configurable"]["context"]["neo4j_driver"],
-                               config["configurable"]["context"]["vector_db_cli"], 
+                               config["configurable"]["context"]["vector_db_client"], 
                                config["configurable"]["context"]["vector_store"],
                                config["configurable"]["context"]["vector_db_collection_name"],
                                config["configurable"]["context"]["extraction_model"])

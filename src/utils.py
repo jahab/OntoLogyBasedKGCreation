@@ -12,6 +12,7 @@ from vector_store import  *
 from prompts import *
 from output_parser import *
 import bm25s
+import traceback
 
 def get_node_labels(tx):
     result = tx.run("CALL db.labels()")
@@ -768,7 +769,7 @@ def get_node_property(driver, node:str)->dict:
     return prop
 
 
-def create_node_embedding(driver,record, embedding_model, recreate_embedding:bool = False, vector_store:QdrantVectorStore=None):
+def create_node_embedding(driver,record, embedding_model, recreate_embedding:bool = False, vector_store:QdrantVectorStore|QdrantClient=None):
     node_label = list(record.labels)[0]
     node_prop = list(record.keys())
     embedding_node_property = "embedding"
@@ -837,8 +838,13 @@ def create_node_embedding(driver,record, embedding_model, recreate_embedding:boo
         return
     
     try:
-        vector_store.add_texts(texts = ["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds], 
-                        metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
+        # print(f"going for vector upload {type(vector_store)}")
+        if isinstance(vector_store, QdrantVectorStore):
+            # print(f"going for vector upload {type(vector_store)}")
+            vector_store.add_texts(texts = ["node_labels:"+str(list(el["n"].labels))+"\n" + el["text"] for el in ds], 
+                            metadatas = [{"node_labels": list(ds[0]["n"].labels),"element_id": ds[0]["n"].element_id } ])
+        elif isinstance(vector_store,QdrantClient):
+            pass
         
         query = """
             MATCH (n)
@@ -849,7 +855,7 @@ def create_node_embedding(driver,record, embedding_model, recreate_embedding:boo
         with driver.session() as session:
             result = session.run(query, element_id=record.element_id)
     except Exception as e:
-        print(f"==== vector creation failed ====")
+        print(f"==== vector creation failed ====\n{traceback.format_exc()}")
         pass
 
 def create_all_node_embeddings(driver, embedding_model, vector_store):

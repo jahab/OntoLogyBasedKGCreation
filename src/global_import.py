@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.chat_models import  ChatAnthropic
-from sentence_transformers import SentenceTransformer
+
 import enum
 import pymongo
 from dotenv import load_dotenv

@@ -92,7 +92,7 @@ if __name__ == "__main__":
                     session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                     session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
         except Exception as e:
-            print(traceback.print_exc())
+            print(f"\n[app.py]: {traceback.format_exc()}")
             print("----------------------------------------------------------------------------------")
             print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
             print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                             session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                             session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
                 except Exception as e:
-                    print(traceback.print_exc())
+                    print(f"\n[app.py]: {traceback.format_exc()}")
                     print("----------------------------------------------------------------------------------")
                     print("Node1: ", resp["node1_dict"]["labels"],  "  props:", model_output["node1_property"])
                     print("Node2: ",  resp["node2_dict"]["labels"], "  props:", model_output["node2_property"])
@@ -168,7 +168,7 @@ if __name__ == "__main__":
                 nodes_and_rels.append(res)
             nodes_and_rels =  format_triples(nodes_and_rels)
         except Exception as e:
-            print(traceback.print_exc())
+            print(f"\n[app.py]: {traceback.format_exc()}")
 
     
 

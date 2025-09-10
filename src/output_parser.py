@@ -83,7 +83,7 @@ class ListOfTriplesParser():
             return ls
             # return [self.model_cls(**item) for item in items]
         except Exception as e:
-            raise ValueError(f"Could not parse LLM output as list of triples: {traceback.format_exc()} \n LLMresponse {text}")
+            print(f"Could not parse LLM output as list of triples: {traceback.format_exc()} \n LLMresponse {text}")
 
 
 
