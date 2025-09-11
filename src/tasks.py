@@ -65,6 +65,23 @@ def generate_embedding_graph():
 
 
 def refine_node_graph():
+    workflow = StateGraph(state_schema = KGBuilderState)
+    tools = ToolNode([read_document,chunk_pdf])
+    workflow.add_node("tools_node",tools)
+    # workflow.add_node("human_node", human_node)
+    workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
+    workflow.add_node("read_document",read_document_ag)
+    workflow.add_node("chunk_pdf",chunk_pdf_ag)
+    workflow.add_node("read_chunk",read_chunk_ag)
+
+    workflow.add_node("extract_nodes_rels",extract_nodes_rels)
+    workflow.add_node("generate_embeddings",generate_embeddings)
+    workflow.add_node("refine_nodes",refine_nodes)
+
+    workflow.add_edge(START, "refine_nodes")
+    workflow.add_edge("refine_nodes", END)
+    graph = workflow.compile()
+    return graph
     pass
 
 
@@ -81,7 +98,6 @@ def create_invoke_graph(self, data):
             meta={"message": "Adding data to vector store"}
         )
     
-    
     context = init_context(data)
     load_ontology(context["neo4j_driver"])
     #create_constraint
@@ -93,8 +109,8 @@ def create_invoke_graph(self, data):
     # llm = llm.bind_tools([tools])
     
     # Nodes
-    # graph = generate_node_rels_graph()
-    graph = generate_embedding_graph()
+    graph = generate_node_rels_graph()
+    # graph = generate_embedding_graph()
     config = RunnableConfig(recursion_limit=300, **context)
     # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
   

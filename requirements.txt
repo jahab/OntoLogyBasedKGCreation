@@ -4,7 +4,6 @@ neo4j-graphrag==1.7.0
 neo4j-viz==0.3.1
 google-ai-generativelanguage==0.6.18
 langchain==0.3.27
-langchain-chroma==0.2.4
 langchain-community==0.3.29
 langchain-core==0.3.76
 langchain-experimental==0.3.4
@@ -12,13 +11,15 @@ langchain-google-genai==2.1.5
 langchain-huggingface==0.3.1
 langchain-neo4j==0.4.0
 langchain-openai==0.3.19
-langchain-qdrant==0.2.0
-langchain-text-splitters==0.3.8
+langchain-qdrant==0.2.1
+langchain-text-splitters==0.3.11
 langgraph==0.6.7
 google-genai==1.27.0
-qdrant-client==1.14.3
+qdrant-client==1.15.1
 celery==5.5.3
 redis==6.2.0
 bm25s==0.2.13
+sentence-transformers==5.1.0
+huggingface-hub==0.34.4
 flask
 pymongo

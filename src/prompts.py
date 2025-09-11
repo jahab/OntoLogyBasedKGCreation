@@ -447,24 +447,25 @@ node2_property : {node2_property} # you are required to fill this up based on no
 
 
 METADATA_REFINE_PROMPT = """
-You are required to extract the follwoing from the given text. If some of fields are not present do not output them. Do nodd any extra information other than these fields.
+You are required to extract the follwoing from the given text. If some of fields are not present do not output them. Do not add any extra information other than these fields.
+Return output as string.
 Extract:
 -court_name: The name of the court.
 -court_type: District_Court/SupremeCourt/Tribunal/High_Court/Metropolitian_Courts/Session_Court
 -case_name: The names of the parties involved in the case.
 -case_id: The case number.
--Judge:
--Lawyer:
--Counsel:
--Solicitor:
+-Judge: Name of the Judge
+-Lawyer: Name of the Lawyer
+-Counsel: Name of the Councel
+-Solicitor: Name of the Solicitor
 -court_decision: Order/Judgement/Decree
--Appellant:
--Defendant:
--Respondent:
--Plaintiff:
--Accused:
--Petitioner:
--DateOfJudgement:
+-Appellant: Name of Appellant
+-Defendant: Name of Defendant
+-Respondent: Name of Respondent
+-Plaintiff: Name of Plaintiff
+-Accused: Name of Plaintiff 
+-Petitioner: Name of Petitioner
+-DateOfJudgement: Date 
 -citations: citation to a Case/ Act/ Law/ Article
 """
 

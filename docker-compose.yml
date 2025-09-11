@@ -36,6 +36,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        HF_TOKEN: ${HF_TOKEN}
     container_name: KG_app
     ports:
       - "4044:4044"
@@ -45,6 +47,11 @@ services:
       - mongodb
     volumes:
       - $PWD/user-data:/data/
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+    env_file:
+      - ./src/.env
+
 
   login-service:
     build:

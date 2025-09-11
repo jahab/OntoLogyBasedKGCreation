@@ -26,6 +26,7 @@ import traceback
 from refine_nodes import *
 from vector_store import *
 from global_import import *
+import operator
 
 class KGBuilderState(TypedDict):
     doc_path: str
@@ -38,7 +39,7 @@ class KGBuilderState(TypedDict):
     previous_chunk_id: str | None
     nodes_and_rels: List
     num_chunks : int
-    chunk_counter : int
+    chunk_counter : Annotated[int, operator.add]
     courtcase_details: Dict
     
 class KGBuilderContext(TypedDict):
@@ -127,6 +128,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
     print(f"===========Case metadata: {case_metadata}")
     nodes_and_rels = []
+    
     for item in case_metadata:
         node1_type = item.node1_type
         node2_type = item.node2_type
@@ -161,7 +163,11 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
         )
     meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
     metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
-    print(f"[CASEMETADATA] : {metadata.content}")
+    print(f"""
+     _       __  _         _ ___      _      ___     
+    /   /\  (_  |_   |\/| |_  |  /\  | \  /\  |  /\  
+    \_ /--\ __) |_   |  | |_  | /--\ |_/ /--\ | /--\ 
+  \n{metadata.content}""")
     
     case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
     courtcase_extract_template = ChatPromptTemplate(
@@ -201,13 +207,36 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
         resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
-        print(resp.content)
+        print(f"[extract_nodes_rels]: KG_EXTRACTION_CHAIN: \n{resp.content}")
         triples = config["configurable"]["context"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)
+        print("[extract_nodes_rels]: Create Paragraph\n")
+        with config["configurable"]["context"]["neo4j_driver"].session() as session:
+            print(f"STATE: {state}")
+            
+            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
+            session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
+            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
+                                                        ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
+                                                        "hasParagraph")
+            
+            if state["chunk_counter"]==1:
+                session.execute_write(merge_node, ["CaseMetadata"],{"text":state["case_metadata"]})
+                session.execute_write(merge_relationship, ["CaseMetadata"],  {"text":state["case_metadata"]}, 
+                                                            ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
+                                                            "hasCaseMetadata")
+            
+            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
+            if state.get("previous_chunk_id",None) != None:
+                print("================Connecting the chunk=================")
+                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
+                                                        ["Paragraph"], {"chunk_id":current_chunk_id},
+                                                        "next")
+                
+                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
+                                                        ["Paragraph"], {"chunk_id": state.get("previous_chunk_id")},
+                                                        "previous")
         print("=============================================================")
-        # jsondata.append(json.loads(triples)["Data"])
-        # Save Interaction
-        # save_interaction(mem0_user_id, text_chunk, resp.content)
         context = triples
         for item in context:
             node1_type = item.node1_type
@@ -223,43 +252,41 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                     with config["configurable"]["context"]["neo4j_driver"].session() as session:
                         session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                         session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
-                        session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
+                        session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  
+                                                                  model_output["node1_property"], 
+                                                                  resp["node2_dict"]["labels"], 
+                                                                  model_output["node2_property"], 
+                                                                  model_output["relationship"])
+                        
+                        session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  
+                                                                  model_output["node1_property"], 
+                                                                  ["Paragraph"], 
+                                                                  {"text":state["chunk"],"chunk_id":current_chunk_id}, 
+                                                                  "part_of")
+                        
+                        session.execute_write(merge_relationship, resp["node2_dict"]["labels"],  
+                                                                  model_output["node2_property"], 
+                                                                  ["Paragraph"], 
+                                                                  {"text":state["chunk"],"chunk_id":current_chunk_id}, 
+                                                                  "part_of")
             except Exception as e:
                 print(f"\n[extract_nodes_rels]: {traceback.format_exc()}")
                 print("----------------------------------------------------------------------------------")
                 print(f"Node1: {resp["node1_dict"]["labels"]}, props: {model_output["node1_property"]}")
                 print(f"Node2: {resp["node2_dict"]["labels"]}, props: { model_output["node2_property"]}")
                 print(f"Relationship: {model_output["relationship"]}")
-                              
-        with config["configurable"]["context"]["neo4j_driver"].session() as session:
-            print(f"STATE: {state}")
-            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
-            session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
-            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
-                                                        ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
-                                                        "hasParagraph")
-            
-            print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
-            if state.get("previous_chunk_id",None) != None:
-                print("================Connecting the chunk=================")
-                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
-                                                        ["Paragraph"], {"chunk_id":current_chunk_id},
-                                                        "next")
-                
-                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
-                                                        ["Paragraph"], {"chunk_id": state.get("previous_chunk_id")},
-                                                        "previous")
-        
+                                      
         previous_chunk_id = current_chunk_id
         records = get_graph(config["configurable"]["context"]["neo4j_driver"])
         nodes_and_rels  = []
         # print(f"records from get_graph {get_graph}")
-        for res in records:
-            print(f"res==== {res}")
-            if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
+        for rec in records:
+            print(f"rec==== {rec}")
+            if "Paragraph" in rec["source_labels"]  or "Paragraph" in rec["target_labels"]:
                 continue
-            nodes_and_rels.append(res)
-        writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
+            nodes_and_rels.append(rec)
+        writer({"data": f"Node and rels Extracted for chunk: {state.get('chunk_counter',0)}", "type": "progress"})
+        
     except Exception as e:
         print(f"\n[extract_nodes_rels]: {traceback.format_exc()}")
         previous_chunk_id = None
@@ -304,13 +331,12 @@ def read_chunk_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     writer = get_stream_writer()
     writer({"data": f"Reading chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
     
-    print("chunk_counter:",state.get("chunk_counter",0))
-
+    print(f"chunk_counter:{state.get("chunk_counter",0)}")
     if state.get("case_metadata",None) == None:    
         chunk = state["text_chunks"][state.get("chunk_counter",0)]
-        return {"chunk":chunk, "chunk_counter":state.get("chunk_counter",0)+1, "next":"extract_case_metadata"}
-    elif(state.get("case_metadata",None) and state["chunk_counter"]<=state["num_chunks"]-1):
-        chunk = state["text_chunks"][state.get("chunk_counter",0)]
-        return {"chunk":chunk, "chunk_counter":state.get("chunk_counter",0)+1, "next":"extract_nodes_rels"}
+        return {"chunk":chunk, "chunk_counter":1, "next":"extract_case_metadata"}
+    elif(state.get("case_metadata",None) and state["chunk_counter"]<=state["num_chunks"]-1): #TODO FIXME: See if the last chunk gets read or not
+        chunk = state["text_chunks"][state["chunk_counter"]]
+        return {"chunk":chunk, "chunk_counter":1, "next":"extract_nodes_rels"}
     elif state["chunk_counter"]==state["num_chunks"]:
         return {"next":"generate_embeddings"}
