@@ -6,8 +6,7 @@ from langchain_community.chat_models import  ChatAnthropic
 
 import enum
 import pymongo
-from dotenv import load_dotenv
-load_dotenv()
+
 
 EMBEDDING_MAP = {
     "openai": lambda model: OpenAIEmbeddings(model=model),

@@ -38,6 +38,10 @@ services:
       dockerfile: Dockerfile
       args:
         HF_TOKEN: ${HF_TOKEN}
+        OPENAI_API_KEY: ${OPENAI_API_KEY}
+        GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+        NEO4j_USER_NAME: ${NEO4j_USER_NAME}
+        NEO4j_PWD: ${NEO4j_PWD}
     container_name: KG_app
     ports:
       - "4044:4044"
@@ -49,9 +53,12 @@ services:
       - $PWD/user-data:/data/
     environment:
       HF_TOKEN: ${HF_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      NEO4j_USER_NAME: ${NEO4j_USER_NAME}
+      NEO4j_PWD: ${NEO4j_PWD}
     env_file:
-      - .env
-
+      - ./.env
 
   login-service:
     build:

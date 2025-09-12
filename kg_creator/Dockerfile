@@ -1,8 +1,8 @@
-FROM python:3.12 as builder
+FROM python:3.12 AS builder
 WORKDIR /app
 
 ARG HF_TOKEN
-ENV HF_TOKEN=$HF_TOKEN
+ENV HF_TOKEN=${HF_TOKEN}
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -21,17 +21,17 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy pre-downloaded model cache
-# COPY --from=builder /model-cache /model-cache
+COPY --from=builder /model-cache /model-cache
 
 # Environment vars
-# ENV HF_HOME=/model-cache \
-#     TRANSFORMERS_OFFLINE=1 \
-#     HF_DATASETS_OFFLINE=1
+ENV HF_HOME=/model-cache \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_DATASETS_OFFLINE=1
 
-# Copy application source
+# Copy application src
 COPY src .
 
 # Entry point
 RUN chmod +x entry_point.sh
-# ENTRYPOINT ["./entry_point.sh"]
-CMD ["python"]
+ENTRYPOINT ["./entry_point.sh"]
+# CMD ["python"]

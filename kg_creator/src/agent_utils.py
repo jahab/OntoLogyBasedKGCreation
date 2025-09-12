@@ -35,7 +35,7 @@ class KGBuilderState(TypedDict):
     full_text: str
     text_chunks: str | None
     merge_node: str | None
-    chunk: str
+    chunk: str|None
     previous_chunk_id: str | None
     nodes_and_rels: List
     num_chunks : int
@@ -71,14 +71,12 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
 
 
 def init_context(data):    
-    load_dotenv()
     uri = "bolt://neo4j:7687"
     vector_db_uri = "http://vector_db:6333"
-    os.environ["NEO4j_USER_NAME"] = os.getenv("NEO4j_USER_NAME")
-    os.environ["NEO4j_PWD"] = os.getenv("NEO4j_PWD")
-    os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-    os.environ["MEM0_API_KEY"] = os.getenv("MEM0_API_KEY")
-    os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+    neo4j_username = os.getenv("NEO4j_USER_NAME")
+    neo4j_password = os.getenv("NEO4j_PWD")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY")
     
     # embedding_func = GoogleGenerativeAIEmbeddings
     # embedding_model = "models/text-embedding-004"
@@ -88,7 +86,7 @@ def init_context(data):
     
     embedding_instance, extraction_model = get_models(data["model_provider"], data["embedding_provider"],data["embedding_model"], data["extraction_model"])
     
-    driver = GraphDatabase.driver(uri, auth=(os.environ["NEO4j_USER_NAME"], os.environ["NEO4j_PWD"]))
+    driver = GraphDatabase.driver(uri, auth=(neo4j_username, neo4j_password))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
     vector_store = vector_db.create_collection("CourtCase")
     # vector_store = vec_ins["vector_store"]
@@ -315,7 +313,7 @@ def read_document_ag(state:KGBuilderState, config: RunnableConfig):
     """
     Call to read a pdf and extract text as string from this pdf and return this text.
     """
-    return {"full_text":read_document(state["doc_path"])}
+    return {"full_text":read_document(state["doc_path"]), "case_metadata":{}, "courtcase_details":{}, "text_chunks":None,"merge_node":None,"chunk":None ,"previous_chunk_id":None,"nodes_and_rels":None,"num_chunks":0 }
 
 
 def chunk_pdf_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
