@@ -34,7 +34,7 @@ services:
 
   kg_app:
     build:
-      context: .
+      context: ./kg_creator
       dockerfile: Dockerfile
       args:
         HF_TOKEN: ${HF_TOKEN}
@@ -50,7 +50,7 @@ services:
     environment:
       HF_TOKEN: ${HF_TOKEN}
     env_file:
-      - ./src/.env
+      - .env
 
 
   login-service:

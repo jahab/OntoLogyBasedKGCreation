@@ -6,3 +6,4 @@ qdrant_storage/
 .vscode
 mongo-data/
 user-data/
+*.ipynb

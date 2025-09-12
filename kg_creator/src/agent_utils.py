@@ -163,12 +163,13 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
         )
     meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
     metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
-    print(f"""
-     _       __  _         _ ___      _      ___     
-    /   /\  (_  |_   |\/| |_  |  /\  | \  /\  |  /\  
-    \_ /--\ __) |_   |  | |_  | /--\ |_/ /--\ | /--\ 
-  \n{metadata.content}""")
-    
+    case_meta_banner = """
+                +-+-+-+-+ +-+-+-+-+-+-+-+-+
+                |C|A|S|E| |M|E|T|A|D|A|T|A|
+                +-+-+-+-+ +-+-+-+-+-+-+-+-+
+    """
+    print(case_meta_banner)
+    print(metadata.content)
     case_metadata_parser = JsonOutputParser(pydantic_object=CaseMetadataParser)
     courtcase_extract_template = ChatPromptTemplate(
             messages = [("system", EXTRACT_COURTCASE_DETAILS_PROMPT), ("user", "{text}")],
