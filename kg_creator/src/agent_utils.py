@@ -71,8 +71,6 @@ def human_node(state: KGBuilderState) -> Command[Literal["refine_nodes", "cancel
 
 
 def init_context(data):    
-    uri = "bolt://neo4j:7687"
-    vector_db_uri = "http://vector_db:6333"
     neo4j_username = os.getenv("NEO4j_USER_NAME")
     neo4j_password = os.getenv("NEO4j_PWD")
     openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -86,7 +84,7 @@ def init_context(data):
     
     embedding_instance, extraction_model = get_models(data["model_provider"], data["embedding_provider"],data["embedding_model"], data["extraction_model"])
     
-    driver = GraphDatabase.driver(uri, auth=(neo4j_username, neo4j_password))
+    driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
     vector_db = VectorDB(vector_db_uri,embedding_instance)
     vector_store = vector_db.create_collection("CourtCase")
     # vector_store = vec_ins["vector_store"]
@@ -123,7 +121,7 @@ def init_context(data):
 
 
 def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
-    case_metadata = extract_case_metadata(config["configurable"]["context"]["extraction_model"], state["chunk"])
+    case_metadata = extract_case_metadata(config["configurable"]["extraction_model"], state["chunk"])
     print(f"===========Case metadata: {case_metadata}")
     nodes_and_rels = []
     
@@ -134,10 +132,10 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
         node2_value = item.node2_value
         relationship = item.relationship
         try:
-            resp = some_func_v2(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
+            resp = some_func_v2(config["configurable"]["neo4j_driver"], config["configurable"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
             if resp:
                 model_output = resp["model_output"]
-                with config["configurable"]["context"]["neo4j_driver"].session() as session:
+                with config["configurable"]["neo4j_driver"].session() as session:
                     session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                     session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                     session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  model_output["node1_property"], resp["node2_dict"]["labels"], model_output["node2_property"], model_output["relationship"])
@@ -145,7 +143,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             print(f"[extract_case_metadata_ag]: {traceback.format_exc()}")
             print("----------------------------------------------------------------------------------")            
 
-    records = get_graph(config["configurable"]["context"]["neo4j_driver"])
+    records = get_graph(config["configurable"]["neo4j_driver"])
     for res in records:
         if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
             continue
@@ -159,7 +157,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
     metadata_extract_template = ChatPromptTemplate(
             messages = [("system", METADATA_REFINE_PROMPT), ("user", "{text}")]
         )
-    meta_extraction_chain = metadata_extract_template | config["configurable"]["context"]["extraction_model"]
+    meta_extraction_chain = metadata_extract_template | config["configurable"]["extraction_model"]
     metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
     case_meta_banner = """
                 +-+-+-+-+ +-+-+-+-+-+-+-+-+
@@ -173,7 +171,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             messages = [("system", EXTRACT_COURTCASE_DETAILS_PROMPT), ("user", "{text}")],
             partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
         )
-    case_extraction_chain = courtcase_extract_template | config["configurable"]["context"]["extraction_model"] | case_metadata_parser
+    case_extraction_chain = courtcase_extract_template | config["configurable"]["extraction_model"] | case_metadata_parser
     case_extract =  case_extraction_chain.invoke({"text": state["chunk"]})
     print(f"case_extract : {case_extract}")
     return {"case_metadata":metadata.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
@@ -205,12 +203,12 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         # Generate Response
         writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
-        resp = config["configurable"]["context"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
+        resp = config["configurable"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
         print(f"[extract_nodes_rels]: KG_EXTRACTION_CHAIN: \n{resp.content}")
-        triples = config["configurable"]["context"]["KG_extraction_parser"].parse(resp.content)
+        triples = config["configurable"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)
         print("[extract_nodes_rels]: Create Paragraph\n")
-        with config["configurable"]["context"]["neo4j_driver"].session() as session:
+        with config["configurable"]["neo4j_driver"].session() as session:
             print(f"STATE: {state}")
             
             session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
@@ -244,11 +242,11 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
             node2_value = item.node2_value
             relationship = item.relationship
             try:
-                resp = some_func_v2(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
+                resp = some_func_v2(config["configurable"]["neo4j_driver"], config["configurable"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
                 if resp:
                     model_output = resp["model_output"]
                     # print(model_output)
-                    with config["configurable"]["context"]["neo4j_driver"].session() as session:
+                    with config["configurable"]["neo4j_driver"].session() as session:
                         session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                         session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
                         session.execute_write(merge_relationship, resp["node1_dict"]["labels"],  
@@ -276,7 +274,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 print(f"Relationship: {model_output["relationship"]}")
                                       
         previous_chunk_id = current_chunk_id
-        records = get_graph(config["configurable"]["context"]["neo4j_driver"])
+        records = get_graph(config["configurable"]["neo4j_driver"])
         nodes_and_rels  = []
         # print(f"records from get_graph {get_graph}")
         for rec in records:
@@ -293,49 +291,55 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
 
 
 def refine_nodes(state:KGBuilderState, config: RunnableConfig):
-    refine_nodes = RefineNodes(config["configurable"]["context"]["neo4j_driver"],
-                               config["configurable"]["context"]["vector_db_client"], 
-                               config["configurable"]["context"]["vector_store"],
-                               config["configurable"]["context"]["vector_db_collection_name"],
-                               config["configurable"]["context"]["extraction_model"])
+    refine_nodes = RefineNodes(config["configurable"]["neo4j_driver"],
+                               config["configurable"]["vector_db_client"], 
+                               config["configurable"]["vector_store"],
+                               config["configurable"]["vector_db_collection_name"],
+                               config["configurable"]["extraction_model"])
     user_collection = mongo_db["users"]
-    user_details = user_collection.find_one({"username": config["configurable"]["context"]["username"]})
+    user_details = user_collection.find_one({"username": config["configurable"]["username"]})
     refine_nodes.refine_nodes(task_id = user_details["task_id"])
 
 
 def generate_embeddings(state:KGBuilderState, config: RunnableConfig):
     writer = get_stream_writer()
     writer({"data": "Generateing Embeddings", "type": "progress"}) 
-    create_all_node_embeddings(config["configurable"]["context"]["neo4j_driver"], config["configurable"]["context"]["embedding_model"], config["configurable"]["context"]["vector_store"])
+    create_all_node_embeddings(config["configurable"]["neo4j_driver"], config["configurable"]["embedding_model"], config["configurable"]["vector_store"])
     writer({"data": "Embeddings Generated", "type": "progress"}) 
 
 def read_document_ag(state:KGBuilderState, config: RunnableConfig):
     """
     Call to read a pdf and extract text as string from this pdf and return this text.
     """
-    return {"full_text":read_document(state["doc_path"]), "case_metadata":{}, "courtcase_details":{}, "text_chunks":None,"merge_node":None,"chunk":None ,"previous_chunk_id":None,"nodes_and_rels":None,"num_chunks":0 }
+    return {"full_text":read_document(state["doc_path"]), "case_metadata":None, "courtcase_details":None, "text_chunks":None,"merge_node":None,"chunk":None ,"previous_chunk_id":None,"nodes_and_rels":None,"num_chunks":0 }
 
 
 def chunk_pdf_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     """
     Call to split a whole body of text in multiple chunks with overlap and return a list.
     """
-    text_chunks = chunk_pdf(state["full_text"])
-    return {"text_chunks":text_chunks, "chunk_counter":0, "num_chunks":len(text_chunks)}
-
+    try:
+        text_chunks = chunk_pdf(state["full_text"])
+        return {"text_chunks":text_chunks, "chunk_counter":0, "num_chunks":len(text_chunks)}
+    except Exception as e:
+        print(f"\n[chunk_pdf_ag]: {traceback.format_exc()}")
+        
 def read_chunk_ag(state:KGBuilderState, config: RunnableConfig)->Dict:
     """
     yield next chunk.
     """
-    writer = get_stream_writer()
-    writer({"data": f"Reading chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
-    
-    print(f"chunk_counter:{state.get("chunk_counter",0)}")
-    if state.get("case_metadata",None) == None:    
-        chunk = state["text_chunks"][state.get("chunk_counter",0)]
-        return {"chunk":chunk, "chunk_counter":1, "next":"extract_case_metadata"}
-    elif(state.get("case_metadata",None) and state["chunk_counter"]<=state["num_chunks"]-1): #TODO FIXME: See if the last chunk gets read or not
-        chunk = state["text_chunks"][state["chunk_counter"]]
-        return {"chunk":chunk, "chunk_counter":1, "next":"extract_nodes_rels"}
-    elif state["chunk_counter"]==state["num_chunks"]:
-        return {"next":"generate_embeddings"}
+    try:
+        writer = get_stream_writer()
+        writer({"data": f"Reading chunk: {state.get('chunk_counter',0)}", "type": "progress"}) 
+        
+        print(f"chunk_counter:{state.get("chunk_counter",0)}")
+        if state.get("case_metadata",None) == None:    
+            chunk = state["text_chunks"][state.get("chunk_counter",0)]
+            return {"chunk":chunk, "chunk_counter":1, "next":"extract_case_metadata"}
+        elif(state.get("case_metadata",None) and state["chunk_counter"]<=state["num_chunks"]-1): #TODO FIXME: See if the last chunk gets read or not
+            chunk = state["text_chunks"][state["chunk_counter"]]
+            return {"chunk":chunk, "chunk_counter":1, "next":"extract_nodes_rels"}
+        elif state["chunk_counter"]==state["num_chunks"]:
+            return {"next":"generate_embeddings"}
+    except Exception as e:
+        print(f"\n[read_chunk_ag]: {traceback.format_exc()}")

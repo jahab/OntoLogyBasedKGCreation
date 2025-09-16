@@ -524,6 +524,18 @@ def merged_node_with_label_and_prop(driver,node:str)->dict:
     return node_dict
 
 
+def make_title_case_all(obj):
+    if isinstance(obj, dict):
+        return {k: make_title_case_all(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [make_title_case_all(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(make_title_case_all(v) for v in obj)
+    elif isinstance(obj, str):
+        return obj.title()
+    else:
+        return obj
+
 
 
 def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, node2_type,  node2_value):
@@ -552,6 +564,8 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
                                        "node1_property":json.dumps(node1_dict["properties"]), "node2_property":json.dumps(node2_dict["properties"]),
                                        })
                     print(f"[MODEL OUTPUT:] {dc}")
+                    dc["node1_property"] = make_title_case_all(dc["node1_property"])
+                    dc["node2_property"] = make_title_case_all(dc["node2_property"])
                     return {"node1_dict":node1_dict,"node2_dict":node2_dict, "model_output":dc}
                     
 

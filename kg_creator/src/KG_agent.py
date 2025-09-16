@@ -33,48 +33,93 @@ from output_parser import *
 from neo4j import GraphDatabase
 import uuid
 import traceback
-# from mem0 import MemoryClient
 from refine_nodes import *
+
+
+
+def generate_node_rels_graph():
+    workflow = StateGraph(state_schema = KGBuilderState)
+    tools = ToolNode([read_document,chunk_pdf])
+    workflow.add_node("tools_node",tools)
+    # workflow.add_node("human_node", human_node)
+    workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
+    workflow.add_node("read_document",read_document_ag)
+    workflow.add_node("chunk_pdf",chunk_pdf_ag)
+    workflow.add_node("read_chunk",read_chunk_ag)
+
+    workflow.add_node("extract_nodes_rels",extract_nodes_rels)
+    workflow.add_node("generate_embeddings",generate_embeddings)
+    workflow.add_node("refine_nodes",refine_nodes)
+
+    workflow.add_edge(START, "read_document")
+    workflow.add_edge("read_document","chunk_pdf")
+    workflow.add_edge("chunk_pdf","read_chunk")
+    workflow.add_conditional_edges("read_chunk",  lambda state: state.get("next"),{"extract_case_metadata": "extract_case_metadata", "extract_nodes_rels": "extract_nodes_rels", "generate_embeddings":"generate_embeddings" })
+    # workflow.add_edge("extract_case_metadata","extract_nodes_rels")
+    # workflow.add_edge("extract_nodes_rels","read_chunk")
+    # workflow.add_edge("generate_embeddings","refine_nodes")
+    # workflow.add_edge("refine_nodes", END)
+    workflow.add_edge("read_chunk", END)
+    graph = workflow.compile()
+    return graph
+
+def generate_embedding_graph():
+    workflow = StateGraph(state_schema = KGBuilderState)
+    tools = ToolNode([read_document,chunk_pdf])
+    workflow.add_node("tools_node",tools)
+    # workflow.add_node("human_node", human_node)
+    workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
+    workflow.add_node("read_document",read_document_ag)
+    workflow.add_node("chunk_pdf",chunk_pdf_ag)
+    workflow.add_node("read_chunk",read_chunk_ag)
+
+    workflow.add_node("extract_nodes_rels",extract_nodes_rels)
+    workflow.add_node("generate_embeddings",generate_embeddings)
+    workflow.add_node("refine_nodes",refine_nodes)
+
+    workflow.add_edge(START, "generate_embeddings")
+    workflow.add_edge("generate_embeddings", END)
+    graph = workflow.compile()
+    return graph
+
+
+def refine_node_graph():
+    workflow = StateGraph(state_schema = KGBuilderState)
+    tools = ToolNode([read_document,chunk_pdf])
+    workflow.add_node("tools_node",tools)
+    # workflow.add_node("human_node", human_node)
+    workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
+    workflow.add_node("read_document",read_document_ag)
+    workflow.add_node("chunk_pdf",chunk_pdf_ag)
+    workflow.add_node("read_chunk",read_chunk_ag)
+
+    workflow.add_node("extract_nodes_rels",extract_nodes_rels)
+    workflow.add_node("generate_embeddings",generate_embeddings)
+    workflow.add_node("refine_nodes",refine_nodes)
+
+    workflow.add_edge(START, "refine_nodes")
+    workflow.add_edge("refine_nodes", END)
+    graph = workflow.compile()
+    return graph
+
+
 data = {
-    "pdf_file":"35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf",
-    "provider":"google",
+    "pdf_file":"35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf",
+    "model_provider":"google",
+    "embedding_provider":"google",
     "embedding_model":"models/text-embedding-004",
     "extraction_model":"gemini-2.5-flash"
 }
+
+data["username"] = "admin"
 context = init_context(data)
 load_ontology(context["neo4j_driver"])
 #create_constraint
 create_constraint(context["neo4j_driver"])
 create_index(context["neo4j_driver"])
 
-# llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-tools = ToolNode([read_document,chunk_pdf])
-# llm = llm.bind_tools([tools])
-# # Nodes
-
-# Build workflow
-workflow = StateGraph(state_schema = KGBuilderState)
-workflow.add_node("tools_node",tools)
-# workflow.add_node("human_node", human_node)
-workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
-workflow.add_node("read_document",read_document_ag)
-workflow.add_node("chunk_pdf",chunk_pdf_ag)
-workflow.add_node("read_chunk",read_chunk_ag)
-
-workflow.add_node("extract_nodes_rels",extract_nodes_rels)
-workflow.add_node("generate_embeddings",generate_embeddings)
-workflow.add_node("refine_nodes",refine_nodes)
-
-workflow.add_edge(START, "read_document")
-workflow.add_edge("read_document","chunk_pdf")
-workflow.add_edge("chunk_pdf","read_chunk")
-workflow.add_conditional_edges("read_chunk",  lambda state: state.get("next"),{"extract_case_metadata": "extract_case_metadata", "extract_nodes_rels": "extract_nodes_rels", "generate_embeddings":"generate_embeddings" })
-workflow.add_edge("extract_case_metadata","extract_nodes_rels")
-workflow.add_edge("extract_nodes_rels","read_chunk")
-workflow.add_edge("generate_embeddings","refine_nodes")
-workflow.add_edge("refine_nodes", END)
-graph = workflow.compile()
-
-
-config = RunnableConfig(recursion_limit=300, **context)
-graph.invoke(input = {"doc_path":"35346_2009_39_1501_24473_Judgement_29-Oct-2020-1-2.pdf"}, config = {"context":config})
+graph = generate_node_rels_graph()
+thread_id = str(uuid.uuid4())
+config = RunnableConfig(recursion_limit=300, thread_id=thread_id, **context)
+graph.invoke(input = {"doc_path":data["pdf_file"]}, config = config)
+print("Graph END")

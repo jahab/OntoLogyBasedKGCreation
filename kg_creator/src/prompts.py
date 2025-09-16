@@ -14,6 +14,7 @@ Your job is to:
 - Assign the proper properties to the nodes extracted based on the property table
 - When multiple cases are mentioned using "WITH" or "AND," the first case mentioned should be considered the primary case, and all subsequent cases should be considered "cited" by the primary case. Each case mentioned in these clauses should be extracted as a CourtCase entity with its own hasCaseID.
 - If you are unsure of any entity ot its properties then do not extract it. It is important that you do not hallucinate and do not give false or unverifiable information.
+- When extracting individual names, case names, courtnames use only proper nouns. Do not use pronouns or common nouns
 - Output the triples in JSON format
 
 Use this thoughts while traversing the text

@@ -48,7 +48,6 @@ It leverages:
 - [🧠 Project Overview](#-project-overview)
 - [📦 Requirements](#-requirements)
 - [🛠️ Installation & Setup](#️-installation--setup)
-- [⚙️ Core Components](#️-core-components)
 - [🚀 Usage](#-usage)
 - [🧩 Sample Queries](#-sample-queries)
 - [📐 Ontology Acknowledgement](#-ontology-acknowledgement)
@@ -102,32 +101,53 @@ pip install -r requirements.txt
    ```
    NEO4J_URI=bolt://localhost:7687
    NEO4J_USERNAME=neo4j
-   NEO4J_PASSWORD=your_password
+   NEO4J_PASSWORD=admin@123
    OPENAI_API_KEY=sk-...
    GOOGLE_API_KEY=GI...
+   HF_TOKEN=hf_...
    ```
+3. Install docker compose cli
 
-3. **Start Neo4j**
-   Make sure Neo4j is running locally with the appropriate plugins (APOC and vector indexing enabled).
+3. Run ```docker compose up --build ```
+---
 
-4. **Import Ontology**
-   The base ontology is used to guide the KG structure. You can import it using:
+## 🚀 Usage
+**(WIP with UI)**
 
-   ```cypher
-   CALL n10s.onto.import.fetch("https://raw.githubusercontent.com/semintelligence/NyOn/main/NyOn.owl", "RDF/XML")
-   ```
+### Services
+- **Neo4j Browser:** [http://localhost:7474/browser/preview](http://localhost:7474/browser/preview)  
+- **Qdrant Dashboard:** [http://localhost:6333](http://localhost:6333)  
+- **Graph API Endpoint:** [http://0.0.0.0:4044/](http://0.0.0.0:4044/)  
 
 ---
 
-## ⚙️ Core Components
+### 🔹 Create Graph
+**Endpoint:**  
+```http
+POST http://0.0.0.0:4044/create_graph
+# Request Body
+{
+  "pdf_file": "35346_2009_39_1501_24473_Judgement_29-Oct-2020.pdf",
+  "model_provider": "google",
+  "embedding_provider": "google",
+  "embedding_model": "models/text-embedding-004",
+  "extraction_model": "gemini-2.5-flash"
+}
 
-| Module             | Purpose                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| `app.py`           | Main pipeline to load extracted nodes and relationships into Neo4j from LLM-generated JSON |
-| `output_parser.py` | Parses raw LLM outputs into ontology-aligned triples and cleans metadata                   |
-| `utils.py`         | Utility functions for label management, Cypher generation, and Neo4j connection handling   |
-| `prompts.py`       | Stores and manages prompt templates for LLMs, tailored for legal triple extraction         |
+# Response Body
+{"task_id":"3d1fb599-38bf-4945-8a67-49eac7aad4d6"}
+```
+### 🔹 Check Graph Creation Status
+**Endpoint:**  
+```http
+POST http://0.0.0.0:4044/status
 
+# Request Body
+{
+  "task_id": "3d1fb599-38bf-4945-8a67-49eac7aad4d6"
+}
+```
+ ---
 
 ## 📐 Ontology Acknowledgement
 
@@ -157,7 +177,7 @@ Feel free to submit a PR or open an issue!
 
 ## 📄 License
 
-MIT License — feel free to fork, extend, and build upon it.
+GNU GENERAL PUBLIC LICENSE
 
 ---
 

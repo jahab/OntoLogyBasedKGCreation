@@ -40,7 +40,6 @@ def generate_node_rels_graph():
     workflow.add_edge("extract_nodes_rels","read_chunk")
     workflow.add_edge("generate_embeddings","refine_nodes")
     workflow.add_edge("refine_nodes", END)
-    # workflow.add_edge("extract_case_metadata",END)
     graph = workflow.compile()
     return graph
 
@@ -82,7 +81,6 @@ def refine_node_graph():
     workflow.add_edge("refine_nodes", END)
     graph = workflow.compile()
     return graph
-    pass
 
 
 @celery.task(bind=True)
@@ -111,10 +109,11 @@ def create_invoke_graph(self, data):
     # Nodes
     graph = generate_node_rels_graph()
     # graph = generate_embedding_graph()
-    config = RunnableConfig(recursion_limit=300, **context)
-    # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config})
+    thread_id = str(uuid.uuid4())
+    config = RunnableConfig(recursion_limit=300, thread_id=thread_id, **context)
+    # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = config)
   
-    for chunk in graph.stream({"doc_path":f"/data/{data['pdf_file']}"}, config = {"context":config},stream_mode="custom"):
+    for chunk in graph.stream({"doc_path":f"/data/{data['pdf_file']}"}, config = config,stream_mode="custom"):
         print(chunk)
         self.update_state(
             state="PROGRESS",

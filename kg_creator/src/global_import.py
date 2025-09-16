@@ -1,12 +1,11 @@
-from  langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.chat_models import  ChatAnthropic
-
+import os
 import enum
 import pymongo
-
 
 EMBEDDING_MAP = {
     "openai": lambda model: OpenAIEmbeddings(model=model),
@@ -25,5 +24,12 @@ CHAT_MODEL_MAP = {
 
 USER_QUEUE = {"user_id": [], "task_id":[]} #TODO: FIXME: CRITICAL: Need a mutex on this queue other wise use mongo DB fro polling
 RETRY_LIMIT = 3
+neo4j_uri = "bolt://neo4j:7687"
+vector_db_uri = "http://vector_db:6333"
+# neo4j_uri = "bolt://localhost:7687"
+# vector_db_uri = "http://localhost:6333"
+os.environ["NEO4j_USER_NAME"] = "neo4j"
+os.environ["NEO4j_PWD"] = "admin@123"
+
 myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mongo_db = myclient["db"]
