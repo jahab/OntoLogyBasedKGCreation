@@ -562,7 +562,7 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
                                        "relationship":relationship, 
                                        "node1_value":node1_value, "node2_value":node2_value,
                                        "node1_property":json.dumps(node1_dict["properties"]), "node2_property":json.dumps(node2_dict["properties"]),
-                                       })
+                                       }) #TODO FIXME: fix 502 deadline reach error
                     print(f"[MODEL OUTPUT:] {dc}")
                     dc["node1_property"] = make_title_case_all(dc["node1_property"])
                     dc["node2_property"] = make_title_case_all(dc["node2_property"])
@@ -923,7 +923,7 @@ def extract_case_metadata(model,chunk)->Dict:
         partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
     )
     meta_extraction_chain = metadata_extract_template | model
-    case_metadata = meta_extraction_chain.invoke({"text":chunk})
+    case_metadata = meta_extraction_chain.invoke({"text":chunk}) #TODO:FIXME: Add for 502 deadline exception
     triples = case_metadata_parser.parse(case_metadata.content)
     return triples
 

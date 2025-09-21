@@ -62,7 +62,7 @@ class RefineNodes:
                     #invoke the model with text what is the text????
                     resp = refine_nodes_chain.invoke({"node1": f"{unique_nodes[i].labels} {unique_nodes[i].items()}",
                                                       "node2": f"{n[0].metadata} {n[0].page_content} " 
-                                                      })
+                                                      }) #TODO:FIXME: Add for 502 deadline exception
                     print("[refine Nodes]: ",resp)
                     if "yes" in resp.content.lower():
                         print(task_id)

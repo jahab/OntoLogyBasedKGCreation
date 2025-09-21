@@ -158,7 +158,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             messages = [("system", METADATA_REFINE_PROMPT), ("user", "{text}")]
         )
     meta_extraction_chain = metadata_extract_template | config["configurable"]["extraction_model"]
-    metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels})
+    metadata =  meta_extraction_chain.invoke({"text": nodes_and_rels}) #TODO:FIXME: Add for 502 deadline exception
     case_meta_banner = """
                 +-+-+-+-+ +-+-+-+-+-+-+-+-+
                 |C|A|S|E| |M|E|T|A|D|A|T|A|
@@ -172,7 +172,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             partial_variables={"format_instructions": case_metadata_parser.get_format_instructions()}
         )
     case_extraction_chain = courtcase_extract_template | config["configurable"]["extraction_model"] | case_metadata_parser
-    case_extract =  case_extraction_chain.invoke({"text": state["chunk"]})
+    case_extract =  case_extraction_chain.invoke({"text": state["chunk"]}) #TODO:FIXME: Add for 502 deadline exception
     print(f"case_extract : {case_extract}")
     return {"case_metadata":metadata.content, "nodes_and_rels": nodes_and_rels, "courtcase_details":case_extract}
 
@@ -203,7 +203,7 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         # Generate Response
         writer({"data": f"Extracting Node and rels for chunk number {state.get('chunk_counter',0)}/{state.get('num_chunks',0)}", "type": "progress"}) 
         current_chunk_id = str(uuid.uuid4())
-        resp = config["configurable"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]})
+        resp = config["configurable"]["KG_extraction_chain"].invoke({"text":state["chunk"], "relevant_info_graph":state.get("nodes_and_rels",""), "metadata": state["case_metadata"]}) #TODO:FIXME: Add for 502 deadline exception
         print(f"[extract_nodes_rels]: KG_EXTRACTION_CHAIN: \n{resp.content}")
         triples = config["configurable"]["KG_extraction_parser"].parse(resp.content)
         # print(triples)

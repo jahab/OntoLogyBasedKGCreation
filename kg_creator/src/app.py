@@ -110,7 +110,7 @@ if __name__ == "__main__":
         try:
             # Generate Response
             current_chunk_id = str(uuid.uuid4())
-            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": json.dumps(case_metadata)})
+            resp = KG_extraction_chain.invoke({"text":text_chunk, "relevant_info_graph":nodes_and_rels, "metadata": json.dumps(case_metadata)}) #TODO:FIXME: Add for 502 deadline exception
             # print(resp.content)
             triples = KG_extraction_parser.parse(resp.content)
             # print(triples)
