@@ -12,10 +12,12 @@ app = Flask(__name__)
 # MongoDB connection
 myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mydb = myclient["db"]
-mycol = mydb["users"]
+user_col = mydb["users"]
+docs_col = mydb["docs"]
 
 try:
-    mycol.create_index([('username', 1)], unique=True)
+    user_col.create_index([('username', 1)], unique=True)
+    docs_col.create_index([('name', 1)], unique=True)
 except Exception as e:
     pass
 @app.route('/ping', methods=['GET'])
@@ -30,7 +32,7 @@ def signup():
         if not data or "username" not in data or "password" not in data:
             return make_response(jsonify({'error': 'Username and password required'}), 400)
 
-        existing_user = mycol.find_one({"username": data["username"]})
+        existing_user = user_col.find_one({"username": data["username"]})
         if existing_user:
             return make_response(jsonify({'error': 'Username already exists'}), 409)
 
@@ -39,7 +41,7 @@ def signup():
             "password": data["password"]  # In production: hash this!
         }
 
-        mycol.insert_one(user_data)
+        user_col.insert_one(user_data)
 
         return make_response(jsonify({'message': 'User registered successfully'}), 201)
     except Exception as e:
@@ -53,7 +55,7 @@ def signin():
     if not data or "username" not in data or "password" not in data:
         return make_response(jsonify({'error': 'Username and password required'}), 400)
 
-    user = mycol.find_one({"username": data["username"]})
+    user = user_col.find_one({"username": data["username"]})
     if not user:
         return make_response(jsonify({'error': 'User not found'}), 404)
 
@@ -77,11 +79,11 @@ def forgetpwd():
     if not data or "username" not in data or "new_password" not in data:
         return make_response(jsonify({'error': 'Username and new password required'}), 400)
 
-    user = mycol.find_one({"username": data["username"]})
+    user = user_col.find_one({"username": data["username"]})
     if not user:
         return make_response(jsonify({'error': 'User not found'}), 404)
 
-    mycol.update_one({"username": data["username"]}, {"$set": {"password": data["new_password"]}})
+    user_col.update_one({"username": data["username"]}, {"$set": {"password": data["new_password"]}})
 
     return make_response(jsonify({'message': 'Password updated successfully'}), 200)
 
@@ -91,7 +93,7 @@ if __name__ == '__main__':
         "password": "admin@123"  # In production: hash this!
     }
     try:
-        mycol.insert_one(user_data)
+        user_col.insert_one(user_data)
     except Exception as e:
         print("User already exists")
     app.run(debug=True, host='0.0.0.0', port=5000)

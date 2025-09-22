@@ -18,12 +18,9 @@ class RefineNodes:
             template=REFINE_NODES_PROMPT
         )
 
-
     def remove_emenent_id(self, node_list:list, id_to_remove:str):
-        
         return [node for node in node_list if node.element_id != id_to_remove]
 
-    
     def refine_nodes(self, task_id:str|None):
         # use the calculated embeddings
         # using the embeddings identify the nodes that can be merged

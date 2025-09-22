@@ -305,7 +305,8 @@ def generate_embeddings(state:KGBuilderState, config: RunnableConfig):
     writer = get_stream_writer()
     writer({"data": "Generateing Embeddings", "type": "progress"}) 
     create_all_node_embeddings(config["configurable"]["neo4j_driver"], config["configurable"]["embedding_model"], config["configurable"]["vector_store"])
-    writer({"data": "Embeddings Generated", "type": "progress"}) 
+    writer({"data": "Embeddings Generated", "type": "progress"})
+
 
 def read_document_ag(state:KGBuilderState, config: RunnableConfig):
     """

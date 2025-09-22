@@ -37,9 +37,9 @@ def ping():
 @app.route('/create_graph', methods = ['POST'])
 def create_graph():
     data = request.json
-    data["username"] = "admin"
-    task = create_invoke_graph.delay(data)
+    data["username"] = "admin" #TODO:FIXME: Take user name from session_id
     user_collection = mongo_db["users"]
+    task = create_invoke_graph.delay(data)
     user_collection.update_one({"username": "admin"}, {"$set": {"task_id":task.id}})
     # r = redis.Redis(host="redis", port=6379, db=1)
     # r.setex(f"task_owner:{task.id}", 7200, user_id)

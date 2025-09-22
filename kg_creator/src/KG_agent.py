@@ -55,11 +55,10 @@ def generate_node_rels_graph():
     workflow.add_edge("read_document","chunk_pdf")
     workflow.add_edge("chunk_pdf","read_chunk")
     workflow.add_conditional_edges("read_chunk",  lambda state: state.get("next"),{"extract_case_metadata": "extract_case_metadata", "extract_nodes_rels": "extract_nodes_rels", "generate_embeddings":"generate_embeddings" })
-    # workflow.add_edge("extract_case_metadata","extract_nodes_rels")
-    # workflow.add_edge("extract_nodes_rels","read_chunk")
-    # workflow.add_edge("generate_embeddings","refine_nodes")
-    # workflow.add_edge("refine_nodes", END)
-    workflow.add_edge("read_chunk", END)
+    workflow.add_edge("extract_case_metadata","extract_nodes_rels")
+    workflow.add_edge("extract_nodes_rels","read_chunk")
+    workflow.add_edge("generate_embeddings","refine_nodes")
+    workflow.add_edge("refine_nodes", END)
     graph = workflow.compile()
     return graph
 
@@ -87,7 +86,7 @@ def refine_node_graph():
     workflow = StateGraph(state_schema = KGBuilderState)
     tools = ToolNode([read_document,chunk_pdf])
     workflow.add_node("tools_node",tools)
-    # workflow.add_node("human_node", human_node)
+
     workflow.add_node("extract_case_metadata",extract_case_metadata_ag)
     workflow.add_node("read_document",read_document_ag)
     workflow.add_node("chunk_pdf",chunk_pdf_ag)

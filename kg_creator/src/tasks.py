@@ -112,14 +112,15 @@ def create_invoke_graph(self, data):
     thread_id = str(uuid.uuid4())
     config = RunnableConfig(recursion_limit=300, thread_id=thread_id, **context)
     # graph.invoke(input = {"doc_path":f"/data/{data['pdf_file']}"}, config = config)
-  
+    docs_collection = mongo_db["docs"]
+    docs_collection.insert_one({"name": data['pdf_file'],"user_name":context["username"], "status":"in_progress"})
     for chunk in graph.stream({"doc_path":f"/data/{data['pdf_file']}"}, config = config,stream_mode="custom"):
-        print(chunk)
         self.update_state(
             state="PROGRESS",
             meta={"update":chunk}
         )
-
+    docs_collection.update_one({"name": data['pdf_file']}, {"$set": {"status": "completed"}})
+    
     return {"status": "finished", "result": 42}
 
 if __name__ == "__main__":

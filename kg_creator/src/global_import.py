@@ -11,7 +11,6 @@ EMBEDDING_MAP = {
     "openai": lambda model: OpenAIEmbeddings(model=model),
     "google": lambda model: GoogleGenerativeAIEmbeddings(model=model),
     "hugging_face": lambda model: HuggingFaceEmbeddings(model_name=model)
-    
 }
 
 output_fixer_model = ChatGoogleGenerativeAI(model = "gemini-2.5-flash")
