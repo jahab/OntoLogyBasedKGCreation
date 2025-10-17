@@ -2,13 +2,13 @@
 import os
 import streamlit as st
 import requests
-import extra_streamlit_components as stx
+# import extra_streamlit_components as stx
 from streamlit_agraph import agraph, Node, Edge, Config
 
 import pymongo
 
-myclient = pymongo.MongoClient("mongodb://localhost:27017")
-# myclient = pymongo.MongoClient("mongodb://mongodb:27017")
+# myclient = pymongo.MongoClient("mongodb://localhost:27017")
+myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mongo_db = myclient["db"]
 
 # UPLOAD_DIR = "/data/"
@@ -19,8 +19,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 st.set_page_config(page_title="Legal Graph Builder", layout="wide")
 
 # ---------- 3) Backend base URL ----------
-# BACKEND = "http://login-service:5000"
-BACKEND = "http://localhost:5000"
+BACKEND = "http://login-service:5000"
+# BACKEND = "http://localhost:5000"
 
 # ---------- 4) Helpers ----------
 def login(username, password):
@@ -53,8 +53,9 @@ def dummy_fetch_graph(filename: str):
     return nodes, edges
 
 # ---------- 5) Auth state and JWT token ----------
-cookie_manager = stx.CookieManager()
-token = cookie_manager.get("jwt") or st.session_state.get("jwt_token")
+# cookie_manager = stx.CookieManager()
+# token = cookie_manager.get("jwt") or st.session_state.get("jwt_token")
+token = st.session_state.get("jwt_token")
 
 # ---------- 6) Login / Sign-up ----------
 if token is None:
@@ -82,7 +83,7 @@ if token is None:
         if res.status_code == 200:
             token = res.json().get("token")
             print("=================", token)
-            cookie_manager.set("jwt", token)
+            # cookie_manager.set("jwt", token)
             st.session_state.jwt_token = token
             st.success("Logged in successfully!")
             st.rerun()
@@ -112,17 +113,19 @@ if token is None:
 # ---------- 7) Main App ----------
 else:
     st.title("🧠 Legal Graph Builder")
-
-    left, right = st.columns([1, 2])          # 1-col sidebar, 2-col right panel
-    graph_col, chat_col = right.columns(2)    # split right area
+    left, graph_col = st.columns([1, 50], gap="small")          # 1-col sidebar, 2-col right panel
+    
+    # graph_col = right.columns(1)    # split right area
+    # graph_col, chat_col = right.columns(1)    # split right area
     
     # Sidebar
     with left:
         with st.sidebar:
             st.header("👤 Logged in")
             if st.button("Logout"):
-                print(cookie_manager)
-                cookie_manager.delete("jwt")
+                # print(cookie_manager)
+                # cookie_manager.delete("jwt")
+                st.session_state.pop("jwt_token", None)
                 st.rerun()
 
 
@@ -224,52 +227,52 @@ else:
     #                     nodeHighlightBehavior=True, 
     #         )
     #         agraph(nodes=nodes, edges=edges, config=config)
-    #     # st.markdown("</div>", unsafe_allow_html=True)
+        # st.markdown("</div>", unsafe_allow_html=True)
 
 
 
-nodes = []
-edges = []
-# left, right = st.columns([1, 2])          # 1-col sidebar, 2-col right panel
-# graph_col, chat_col = right.columns(2)    # split right area
-nodes.append( Node(id="Spiderman", 
-                   label="Peter Parker", 
-                   size=25, 
-                   shape="circularImage",
-                   image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png") 
-            ) # includes **kwargs
-nodes.append( Node(id="Captain_Marvel", 
-                   size=25,
-                   shape="circularImage",
-                   image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_captainmarvel.png") 
-            )
-edges.append( Edge(source="Captain_Marvel", 
-                   label="friend_of", 
-                   target="Spiderman", 
-                   # **kwargs
-                   ) 
-            ) 
+    nodes = []
+    edges = []
+    # left, right = st.columns([1, 2])          # 1-col sidebar, 2-col right panel
+    # graph_col, chat_col = right.columns(2)    # split right area
+    nodes.append( Node(id="Spiderman", 
+                    label="Peter Parker", 
+                    size=25, 
+                    shape="circularImage",
+                    image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png") 
+                ) # includes **kwargs
+    nodes.append( Node(id="Captain_Marvel", 
+                    size=25,
+                    shape="circularImage",
+                    image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_captainmarvel.png") 
+                )
+    edges.append( Edge(source="Captain_Marvel", 
+                    label="friend_of", 
+                    target="Spiderman", 
+                    # **kwargs
+                    ) 
+                ) 
 
 
 
-with graph_col:
-    graph_container = st.container(border=True,height=500)
-    with graph_container:
-        config = Config(width="100%", 
-                        height=950, 
-                        directed=True, 
-                        nodeHighlightBehavior=True, 
-                        collapsible=True,
-                        physics={"barnesHut": {
-                                "gravitationalConstant": -2000,
-                                "centralGravity": 0.3,
-                                "springLength": 95
-                                }
-                                }
-            )
-        return_value = agraph(nodes=nodes, 
-                            edges=edges, 
-                            config=config)
+    with graph_col:
+        graph_container = st.container(border=True,height=700)
+        with graph_container:
+            config = Config(width="100%", 
+                            height=950, 
+                            directed=True, 
+                            nodeHighlightBehavior=True, 
+                            collapsible=True,
+                            physics={"barnesHut": {
+                                    "gravitationalConstant": -100,
+                                    "centralGravity": 0.3,
+                                    "springLength": 95
+                                    }
+                                    }
+                )
+            return_value = agraph(nodes=nodes, 
+                                edges=edges, 
+                                config=config)
 
 
 
