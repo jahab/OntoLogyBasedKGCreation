@@ -4,11 +4,11 @@ import streamlit as st
 import requests
 # import extra_streamlit_components as stx
 from streamlit_agraph import agraph, Node, Edge, Config
-
+from pyvis.network import Network
 import pymongo
 
-# myclient = pymongo.MongoClient("mongodb://localhost:27017")
-myclient = pymongo.MongoClient("mongodb://mongodb:27017")
+myclient = pymongo.MongoClient("mongodb://localhost:27017")
+# myclient = pymongo.MongoClient("mongodb://mongodb:27017")
 mongo_db = myclient["db"]
 
 # UPLOAD_DIR = "/data/"
@@ -19,8 +19,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 st.set_page_config(page_title="Legal Graph Builder", layout="wide")
 
 # ---------- 3) Backend base URL ----------
-BACKEND = "http://login-service:5000"
-# BACKEND = "http://localhost:5000"
+# BACKEND = "http://login-service:5000"
+BACKEND = "http://localhost:5000"
 
 # ---------- 4) Helpers ----------
 def login(username, password):
@@ -135,23 +135,62 @@ else:
             if not completed:
                 st.info("No graphs ready yet.")
             else:
-                # st.write("Click a file to load graph of the document:")
-                cols = st.columns(4)               # 4 buttons per row
+                # Create a container with a border for the file list
                 file_container = st.container(border=True)
-            for idx, fname in enumerate(completed):
-                col = cols[idx % 4]
-                # if col.button(fname, key=f"btn_{idx}"):
-                if file_container.button(fname, key=f"btn_{idx}"):
-                    with st.spinner(f"Loading graph for {fname}…"):
-                        raw_nodes, raw_edges = dummy_fetch_graph(fname)
-                    # # convert
-                    nodes = [Node(id=n["id"], label=n["label"], title=n["type"]) for n in raw_nodes]
-                    edges = [Edge(source=e["source"], target=e["target"], label=e["rel"]) for e in raw_edges]
-                    # persist to session_state so the main area picks it up
-                    st.session_state.last_graph_nodes = nodes
-                    st.session_state.last_graph_edges = edges
-                    st.rerun()   # optional: immediate refresh
-
+                
+                # Display files as clickable buttons
+                for idx, fname in enumerate(completed):
+                    if file_container.button(fname, key=f"doc_btn_{idx}", use_container_width=True):
+                        with st.spinner(f"Loading graph for {fname}..."):
+                            # Get graph data for the selected document
+                            records = requests.post("http://kg_app:4044/get_graph", json={"pdf_file": fname})
+                            
+                            # Clear existing graph data
+                            nodes = []
+                            edges = []
+                            
+                            # # Process the records and build graph
+                            for res in records:
+                                if "Paragraph" in res["source_labels"] or "Paragraph" in res["target_labels"]:
+                                    continue
+                                nodes.append(Node(id=res["source_labels"], label=res["source_props"], size=15))
+                                nodes.append(Node(id=res["target_labels"], label=res["target_props"], size=15))
+                                edges.append(Edge(
+                                    source=res["source_labels"][0],
+                                    label=res["relationship"],
+                                    target=res["target_props"][0]
+                                ))
+                            
+                            
+                            # nodes = []
+                            # edges = []
+                            # left, right = st.columns([1, 2])          # 1-col sidebar, 2-col right panel
+                            # graph_col, chat_col = right.columns(2)    # split right area
+                            # nodes.append( Node(id="Spiderman", 
+                            #                 label="Peter Parker", 
+                            #                 size=25, 
+                            #                 shape="circularImage",
+                            #                 image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png") 
+                            #             ) # includes **kwargs
+                            # nodes.append( Node(id="Captain_Marvel", 
+                            #                 size=25,
+                            #                 shape="circularImage",
+                            #                 image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_captainmarvel.png") 
+                            #             )
+                            # edges.append( Edge(source="Captain_Marvel", 
+                            #                 label="friend_of", 
+                            #                 target="Spiderman", 
+                            #                 # **kwargs
+                            #                 ) 
+                            #             ) 
+                            
+                            
+                            # Store graph data in session state
+                            st.session_state.current_graph_nodes = nodes
+                            st.session_state.current_graph_edges = edges
+                            st.session_state.selected_document = fname
+                            st.rerun()
+                
             st.header("📄 Upload Document")
             uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
             if uploaded_file is not None:
@@ -206,74 +245,87 @@ else:
                 else:
                     st.warning("Upload a PDF to begin.")
 
-
-    # with graph_col:
-
-    #     st.markdown("### 🕸️ Graph View")
-    #     st.write("Column width test")
-    #     nodes = [Node(id="CourtCase", label="CourtCase", size=25),
-    #             Node(id="Judge", label="Judge"),
-    #             Node(id="Fact", label="Fact")]
-    #     edges = [Edge(source="CourtCase", target="Judge", label="hasJudge"),
-    #                 Edge(source="CourtCase", target="Fact", label="hasFact")]
-    #     print(nodes)
-        
-    #     # st.write("Debug below 👇")
-    #     graph_container = st.container(border=True,height=500)
-    #     with graph_container:
-    #         config = Config(width=600, 
-    #                     height=500, 
-    #                     directed=True, 
-    #                     nodeHighlightBehavior=True, 
-    #         )
-    #         agraph(nodes=nodes, edges=edges, config=config)
-        # st.markdown("</div>", unsafe_allow_html=True)
-
-
-
-    nodes = []
-    edges = []
-    # left, right = st.columns([1, 2])          # 1-col sidebar, 2-col right panel
-    # graph_col, chat_col = right.columns(2)    # split right area
-    nodes.append( Node(id="Spiderman", 
-                    label="Peter Parker", 
-                    size=25, 
-                    shape="circularImage",
-                    image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png") 
-                ) # includes **kwargs
-    nodes.append( Node(id="Captain_Marvel", 
-                    size=25,
-                    shape="circularImage",
-                    image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_captainmarvel.png") 
-                )
-    edges.append( Edge(source="Captain_Marvel", 
-                    label="friend_of", 
-                    target="Spiderman", 
-                    # **kwargs
-                    ) 
-                ) 
-
-
-
+    # nodes = []
+    # edges = []
+    # # records = requests.post("http://kg_app:4044/get_graph", json={"pdf_file":uploaded_file.name})
+    
+    # for res in records:
+    #     if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
+    #         continue
+    #     nodes.append(Node(id= res["source_labels"],label=res["source_props"], size=15))
+    #     nodes.append(Node(id= res["target_labels"],label=res["target_props"], size=15))
+    #     edges.append(Edge(source=res["source_labels"][0], 
+    #                 label=res["relationship"], 
+    #                 target=res["target_props"][0], 
+    #                 ) )
+    
     with graph_col:
-        graph_container = st.container(border=True,height=700)
+        graph_container = st.container(border=True, height=700)
         with graph_container:
-            config = Config(width="100%", 
-                            height=950, 
-                            directed=True, 
-                            nodeHighlightBehavior=True, 
-                            collapsible=True,
-                            physics={"barnesHut": {
-                                    "gravitationalConstant": -100,
-                                    "centralGravity": 0.3,
-                                    "springLength": 95
-                                    }
-                                    }
+            if "current_graph_nodes" in st.session_state:
+                config = Config(
+                    width="100%",
+                    height=950,
+                    directed=True,
+                    nodeHighlightBehavior=True,
+                    collapsible=True,
+                    physics={"barnesHut": {
+                        "gravitationalConstant": -100,
+                        "centralGravity": 0.3,
+                        "springLength": 95
+                    }}
                 )
-            return_value = agraph(nodes=nodes, 
-                                edges=edges, 
-                                config=config)
+                return_value = agraph(
+                    nodes=st.session_state.current_graph_nodes,
+                    edges=st.session_state.current_graph_edges,
+                    config=config
+                )
+            else:
+                st.info("Select a document to view its knowledge graph")
 
+
+
+
+            # --- Custom CSS for fixed/flexible layout ---
+            # graph_container.markdown("""
+            #     <style>
+            #         .two-column {
+            #             display: flex;
+            #             gap: 1rem;
+            #         }
+            #         .fixed-col {
+            #             flex: 0 0 300px; /* fixed 300px width */
+            #         }
+            #         .flex-col {
+            #             flex: 1; /* take the rest of the space */
+            #         }
+            #         .graph-container {
+            #             border: 1px solid #ddd;
+            #             border-radius: 10px;
+            #             height: 700px;
+            #             overflow: hidden;
+            #         }
+            #     </style>
+            # """, unsafe_allow_html=True)
+
+            # Right (graph display)
+            # st.markdown('<div class="flex-col">', unsafe_allow_html=True)
+            # st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+
+            # # --- Create a PyVis graph ---
+            # net = Network(height="700px", width="100%", directed=True)
+            # net.toggle_physics(True)
+            # net.add_node("A", label="Node A")
+            # net.add_node("B", label="Node B")
+            # net.add_edge("A", "B")
+
+            # # Save & embed
+            # net.save_graph("graph.html")
+            # st.components.v1.html(open("graph.html").read(), height=700, scrolling=False)
+
+            # st.markdown('</div>', unsafe_allow_html=True)
+            # st.markdown('</div>', unsafe_allow_html=True)
+            # st.markdown('</div>', unsafe_allow_html=True)
 
 
 

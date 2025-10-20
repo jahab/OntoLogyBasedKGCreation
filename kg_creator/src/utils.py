@@ -569,24 +569,32 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
                     return {"node1_dict":node1_dict,"node2_dict":node2_dict, "model_output":dc}
                     
 
-def get_nodes_and_rels(tx):
-    query = """
-    MATCH p = (n)-[r]->(s)
-    WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
-    AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
-    return n,r,s
-    """
-    return list(tx.run(query)) 
+def get_nodes_and_rels(tx, reference):
+    if reference:
+        query = """
+        MATCH p = (n {{reference:$reference}})-[r]->(s {{reference:$reference}})
+        WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
+        AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
+        return n,r,s
+        """
+        return list(tx.run(query, reference=reference)) 
+    else:
+        query = """
+        MATCH p = (n)-[r]->(s)
+        WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
+        AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
+        return n,r,s
+        """
+        return list(tx.run(query)) 
 
-
-def get_graph(driver):
+def get_graph(driver, reference=None)->List[Dict[str,str|Dict]]:
     def format_node(node):
         labels = list(node.labels)
         props = node._properties
         return labels,props
     
     with driver.session() as session:
-        result = session.execute_read(get_nodes_and_rels)
+        result = session.execute_read(get_nodes_and_rels, reference = reference)
     results= []
     for record in result:
         n = record["n"]

@@ -78,6 +78,17 @@ def answer_route():
     return "", 204
 
 
+@app.route("/fetch_graph", methods=["POST"])
+def fetch_graph():
+    data = request.json
+    driver = GraphDatabase.driver(neo4j_uri, auth=(os.getenv("NEO4j_USER_NAME"), os.getenv("NEO4j_PWD")))
+    records = get_graph(driver, reference=data["pdf_file"])
+    return records
+    
+    
+    
+
+
 # driver function
 if __name__ == '__main__':
     app.run(debug = True, host = "0.0.0.0", port = 4044)

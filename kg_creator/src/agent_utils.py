@@ -135,6 +135,8 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             resp = some_func_v2(config["configurable"]["neo4j_driver"], config["configurable"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
             if resp:
                 model_output = resp["model_output"]
+                model_output["node1_property"]["reference"] = state["doc_path"]
+                model_output["node2_property"]["reference"] = state["doc_path"]
                 with config["configurable"]["neo4j_driver"].session() as session:
                     session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
                     session.execute_write(merge_node, resp["node2_dict"]["labels"], model_output["node2_property"])
@@ -143,7 +145,7 @@ def extract_case_metadata_ag(state:KGBuilderState, config: RunnableConfig):
             print(f"[extract_case_metadata_ag]: {traceback.format_exc()}")
             print("----------------------------------------------------------------------------------")            
 
-    records = get_graph(config["configurable"]["neo4j_driver"])
+    records = get_graph(config["configurable"]["neo4j_driver"], state["doc_path"])
     for res in records:
         if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
             continue
@@ -211,27 +213,27 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
         with config["configurable"]["neo4j_driver"].session() as session:
             print(f"STATE: {state}")
             
-            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]})
-            session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id})
-            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"]}, 
-                                                        ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
+            session.execute_write(merge_node, ["CourtCase"],{"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"],"reference":state["doc_path"]})
+            session.execute_write(merge_node, ["Paragraph"],{"text":state["chunk"],"chunk_id":current_chunk_id,"reference":state["doc_path"]})
+            session.execute_write(merge_relationship, ["CourtCase"],  {"hasCaseName":state["courtcase_details"]["hasCaseName"], "hasCaseID":state["courtcase_details"]["hasCaseID"], "reference":state["doc_path"]}, 
+                                                        ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id, "reference":state["doc_path"]},
                                                         "hasParagraph")
             
             if state["chunk_counter"]==1:
-                session.execute_write(merge_node, ["CaseMetadata"],{"text":state["case_metadata"]})
-                session.execute_write(merge_relationship, ["CaseMetadata"],  {"text":state["case_metadata"]}, 
-                                                            ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id},
+                session.execute_write(merge_node, ["CaseMetadata"],{"text":state["case_metadata"], "reference":state["doc_path"] })
+                session.execute_write(merge_relationship, ["CaseMetadata"],  {"text":state["case_metadata"],"reference":state["doc_path"]}, 
+                                                            ["Paragraph"], {"text":state["chunk"],"chunk_id":current_chunk_id,"reference":state["doc_path"]},
                                                             "hasCaseMetadata")
             
             print(f"======previous_chunk_id {state.get("previous_chunk_id",None)}")
             if state.get("previous_chunk_id",None) != None:
                 print("================Connecting the chunk=================")
-                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id")}, 
-                                                        ["Paragraph"], {"chunk_id":current_chunk_id},
+                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id": state.get("previous_chunk_id"),"reference":state["doc_path"]}, 
+                                                        ["Paragraph"], {"chunk_id":current_chunk_id,"reference":state["doc_path"]},
                                                         "next")
                 
-                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id}, 
-                                                        ["Paragraph"], {"chunk_id": state.get("previous_chunk_id")},
+                session.execute_write(merge_relationship, ["Paragraph"],  {"chunk_id":current_chunk_id,"reference":state["doc_path"]}, 
+                                                        ["Paragraph"], {"chunk_id": state.get("previous_chunk_id"),"reference":state["doc_path"]},
                                                         "previous")
         print("=============================================================")
         context = triples
@@ -245,6 +247,8 @@ def extract_nodes_rels(state:KGBuilderState, config: RunnableConfig):
                 resp = some_func_v2(config["configurable"]["neo4j_driver"], config["configurable"]["prop_extraction_chain"], node1_type, node1_value, relationship, node2_type,  node2_value)
                 if resp:
                     model_output = resp["model_output"]
+                    model_output["node1_property"]["reference"] = state["doc_path"]
+                    model_output["node2_property"]["reference"] = state["doc_path"]
                     # print(model_output)
                     with config["configurable"]["neo4j_driver"].session() as session:
                         session.execute_write(merge_node, resp["node1_dict"]["labels"], model_output["node1_property"])
