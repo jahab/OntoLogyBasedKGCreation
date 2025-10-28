@@ -82,7 +82,7 @@ def answer_route():
 def fetch_graph():
     data = request.json
     driver = GraphDatabase.driver(neo4j_uri, auth=(os.getenv("NEO4j_USER_NAME"), os.getenv("NEO4j_PWD")))
-    records = get_graph(driver, reference=data["pdf_file"])
+    records = get_graph(driver, reference="/data/"+data["pdf_file"])
     return records
     
     

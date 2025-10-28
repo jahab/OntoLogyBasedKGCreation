@@ -4,23 +4,20 @@ import streamlit as st
 import requests
 # import extra_streamlit_components as stx
 from streamlit_agraph import agraph, Node, Edge, Config
-from pyvis.network import Network
+# from pyvis.network import Network
 import pymongo
-
-myclient = pymongo.MongoClient("mongodb://localhost:27017")
-# myclient = pymongo.MongoClient("mongodb://mongodb:27017")
+import traceback
+from imports import *
+myclient = pymongo.MongoClient(MONGO_URL)
 mongo_db = myclient["db"]
 
-# UPLOAD_DIR = "/data/"
-UPLOAD_DIR = "data/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ---------- 2) Page Config (Only once, at top) ----------
 st.set_page_config(page_title="Legal Graph Builder", layout="wide")
 
 # ---------- 3) Backend base URL ----------
-# BACKEND = "http://login-service:5000"
-BACKEND = "http://localhost:5000"
+
 
 # ---------- 4) Helpers ----------
 def login(username, password):
@@ -143,24 +140,26 @@ else:
                     if file_container.button(fname, key=f"doc_btn_{idx}", use_container_width=True):
                         with st.spinner(f"Loading graph for {fname}..."):
                             # Get graph data for the selected document
-                            records = requests.post("http://kg_app:4044/get_graph", json={"pdf_file": fname})
-                            
+                            records = requests.post(FETCH_GRAPH_URL, json={"pdf_file": fname}).json()
                             # Clear existing graph data
                             nodes = []
                             edges = []
                             
-                            # # Process the records and build graph
+                            # Process the records and build graph
                             for res in records:
-                                if "Paragraph" in res["source_labels"] or "Paragraph" in res["target_labels"]:
-                                    continue
-                                nodes.append(Node(id=res["source_labels"], label=res["source_props"], size=15))
-                                nodes.append(Node(id=res["target_labels"], label=res["target_props"], size=15))
-                                edges.append(Edge(
-                                    source=res["source_labels"][0],
-                                    label=res["relationship"],
-                                    target=res["target_props"][0]
-                                ))
-                            
+                                try:
+                                    if "Paragraph" in res["source_labels"] or "Paragraph" in res["target_labels"]:
+                                        continue
+                                    nodes.append(Node(id=res["source_labels"][0], label=res["source_props"], size=15))
+                                    nodes.append(Node(id=res["target_labels"][0], label=res["target_props"], size=15))
+                                    edges.append(Edge(
+                                        source=res["source_labels"][0],
+                                        label=res["relationship"],
+                                        target=res["target_labels"][0]
+                                    ))
+                                except Exception as e:
+                                    print("=================",res)
+                                    print(traceback.format_exc())                            
                             
                             # nodes = []
                             # edges = []
@@ -187,6 +186,7 @@ else:
                             
                             # Store graph data in session state
                             st.session_state.current_graph_nodes = nodes
+                            print(st.session_state.current_graph_nodes)
                             st.session_state.current_graph_edges = edges
                             st.session_state.selected_document = fname
                             st.rerun()
@@ -241,23 +241,10 @@ else:
                             "embedding_model":emb_model.lower(),
                             "extraction_model":chat_model.lower()
                         }
-                    requests.post("http://kg_app:4044/create_graph",json={"pdf_file":uploaded_file.name})
+                    requests.post(CREATE_GRAPH_URL,json=json_query)
                 else:
                     st.warning("Upload a PDF to begin.")
 
-    # nodes = []
-    # edges = []
-    # # records = requests.post("http://kg_app:4044/get_graph", json={"pdf_file":uploaded_file.name})
-    
-    # for res in records:
-    #     if "Paragraph" in res["source_labels"]  or "Paragraph" in res["target_labels"]:
-    #         continue
-    #     nodes.append(Node(id= res["source_labels"],label=res["source_props"], size=15))
-    #     nodes.append(Node(id= res["target_labels"],label=res["target_props"], size=15))
-    #     edges.append(Edge(source=res["source_labels"][0], 
-    #                 label=res["relationship"], 
-    #                 target=res["target_props"][0], 
-    #                 ) )
     
     with graph_col:
         graph_container = st.container(border=True, height=700)

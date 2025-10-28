@@ -4,7 +4,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.chat_models import  ChatAnthropic
 import os
-import enum
 import pymongo
 
 EMBEDDING_MAP = {

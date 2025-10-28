@@ -572,7 +572,7 @@ def some_func_v2(driver, prop_ex_chain, node1_type, node1_value, relationship, n
 def get_nodes_and_rels(tx, reference):
     if reference:
         query = """
-        MATCH p = (n {{reference:$reference}})-[r]->(s {{reference:$reference}})
+        MATCH p = (n {reference:$reference})-[r]->(s {reference:$reference})
         WHERE NOT n:n4sch__Class AND NOT n:n4sch__Relationship AND NOT n:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef 
         AND NOT s:n4sch__Class AND NOT s:n4sch__Relationship AND NOT s:n4sch__Property AND NOT n:Resource AND NOT n:_GraphConfig AND NOT n:_NsPrefDef
         return n,r,s
